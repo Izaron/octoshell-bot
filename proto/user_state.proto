@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package NOctoshell;
+
+message TUserState {
+    // Types
+    enum ELanguage {
+        EN = 0;
+        RU = 1;
+    }
+
+    enum EState {
+        MAIN_MENU = 0;
+        AUTH_SETTINGS = 1;
+        AUTH_NEW_EMAIL = 2;
+        AUTH_NEW_TOKEN = 3;
+        LOCALE_SETTINGS = 4;
+        TICKET_PROJECT_CHOOSE = 5;
+        TICKET_TOPIC_CHOOSE = 6;
+        TICKET_CLUSTER_CHOOSE = 7;
+        TICKET_SUBJECT_CHOOSE = 8;
+        TICKET_MESSAGE_CHOOSE = 9;
+    }
+
+    message TExtraData {
+        string Key = 1 [json_name="key"];
+        string Value = 2 [json_name="value"];
+    };
+
+    // Data
+    int64 UserId = 1 [json_name="user_id"];
+    EState State = 2 [json_name="state"];
+    ELanguage Language = 3 [json_name="language"];
+
+    string Token = 4 [json_name="token"];
+    string Email = 5 [json_name="email"];
+
+    repeated TExtraData ExtraData = 6 [json_name="extra_data"];
+};
