@@ -18,24 +18,26 @@ namespace NOctoshell {
 TMongo::TMongo(TContext& ctx)
     : Ctx_{ctx}
     , Instance_{}
-    , Client_{mongocxx::uri{"mongodb+srv://octopus:XXXXXXXXXXXX/default?retryWrites=true&w=majority"}}
+    , Client_{mongocxx::uri{ctx.Config().getString("mongodb.url")}}
     , Database_{Client_["default"]}
     , StatesCollection_{Database_.collection("states")}
 {
 }
 
 TUserState TMongo::Load(std::uint64_t userId) {
+    auto& logger = Poco::Logger::get("mongo");
+
     TUserState state;
 
-    Ctx_.Logger().information("getting state for userId %" PRIu64, userId);
+    logger.information("getting state for userId %" PRIu64, userId);
 
     auto stateDoc = StatesCollection_.find_one(document{} << "UserId" << static_cast<std::int64_t>(userId) << finalize);
     if (stateDoc) {
         std::string json = bsoncxx::to_json(*stateDoc);
-        Ctx_.Logger().information("got state for userId %" PRIu64 ": %s", userId, json);
+        logger.information("got state for userId %" PRIu64 ": %s", userId, json);
         json2pb(state, json.c_str(), json.length());
     } else {
-        Ctx_.Logger().information("got no state for userId %" PRIu64, userId);
+        logger.information("got no state for userId %" PRIu64, userId);
         state.set_userid(userId);
     }
 

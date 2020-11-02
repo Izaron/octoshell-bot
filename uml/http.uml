@@ -1,0 +1,28 @@
+@startuml
+box "POCO" #AliceBlue
+participant "HTTP Server"
+end box
+
+box "Octoshell Bot" #AliceBlue
+participant THandlerFactory
+end box
+
+[-> "HTTP Server": HTTP Request
+note left
+  Запрос от кого угодно: ping, telegram/vk, octoshell
+end note
+  
+group Обработка HTTP-запроса
+"HTTP Server" -> THandlerFactory: createRequestHandler(request)
+THandlerFactory -> "HTTP Server": объект <<HTTPRequestHandler*>>
+"HTTP Server" -> "HTTP Server": HTTPRequestHandler::handleRequest(request, response)
+  
+end
+
+"HTTP Server" ->[: HTTP Response
+@enduml
+  
+POCO требует, чтобы существовал класс, который создает объект-обработчик
+HTTP-запроса.
+  
+Здесь этот класс - THandlerFactory.

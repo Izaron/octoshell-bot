@@ -2,8 +2,9 @@
 
 #include <memory>
 
-#include <Poco/Net/HTTPServer.h>
 #include <Poco/Logger.h>
+#include <Poco/Net/HTTPServer.h>
+#include <Poco/Util/PropertyFileConfiguration.h>
 
 #include "model.h"
 #include "mongo.h"
@@ -12,16 +13,20 @@ namespace NOctoshell {
 
 class TContext {
 public:
-    TContext();
-
-    Poco::Logger& Logger() const;
+    TContext(const std::string& configPath);
 
     void StartServer();
     void StopServer();
 
+    const Poco::Util::PropertyFileConfiguration& Config() const;
+
     [[nodiscard]] std::vector<TReaction> OnUpdate(TUpdate update);
 
 private:
+    Poco::Logger& Logger() const;
+
+private:
+    Poco::AutoPtr<Poco::Util::PropertyFileConfiguration> Config_;
     std::unique_ptr<Poco::Net::HTTPServer> HttpServer_;
     TMongo Mongo_;
 };

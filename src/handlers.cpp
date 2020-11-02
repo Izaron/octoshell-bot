@@ -31,16 +31,18 @@ class TClientHandler final : public HTTPRequestHandler {
 public:
     TClientHandler(TContext& ctx)
         : Ctx_{ctx}
-        , Client_{new TClient}
+        , Client_{new TClient(ctx)}
     {
     }
 
     void handleRequest(HTTPServerRequest& request, HTTPServerResponse& response) override {
-        Ctx_.Logger().information("Client query from %s", Client_->Name());
+        auto& logger = Poco::Logger::get("client_handler");
+
+        logger.information("Client query from %s", Client_->Name());
 
         // read full stream
         std::string in = ReadInput(request);
-        Ctx_.Logger().information("Body: %s", in);
+        logger.information("Body: %s", in);
 
         // send default 200 HTTP OK
         response.send();
@@ -53,15 +55,15 @@ public:
 
             // parse Update from Json
             TUpdate update = Client_->ParseUpdate(*object);
-            Ctx_.Logger().information("Text \"%s\", UserId \"%" PRIu64 "\"", update.Text, update.UserId);
+            logger.information("new update: Text \"%s\", UserId \"%" PRIu64 "\"", update.Text, update.UserId);
 
             // send Reactions from Update
             auto reactions = Ctx_.OnUpdate(std::move(update));
             for (const auto& reaction : reactions) {
-                Client_->SendReaction(reaction);
+                Client_->SendReaction(update, reaction);
             }
         } catch (Poco::JSON::JSONException& e) {
-            Ctx_.Logger().error(e.displayText());
+            logger.error(e.displayText());
         }
     }
 
@@ -79,6 +81,15 @@ public:
     }
 };
 
+class TPingHandler final : public HTTPRequestHandler {
+public:
+    void handleRequest(HTTPServerRequest& request, HTTPServerResponse& response) override {
+        response.setStatus(HTTPServerResponse::HTTP_OK);
+        response.setContentType("text/plain");
+        response.send() << "pong";
+    }
+};
+
 } // namespace
 
 THandlerFactory::THandlerFactory(TContext& ctx)
@@ -87,8 +98,14 @@ THandlerFactory::THandlerFactory(TContext& ctx)
 }
 
 HTTPRequestHandler* THandlerFactory::createRequestHandler(const HTTPServerRequest& request) {
+    auto& logger = Poco::Logger::get("handlers");
+
     const auto& uri = request.getURI();
-    Ctx_.Logger().information("Got request at URI %s", uri);
+    logger.information("Got request at URI %s", uri);
+
+    if (uri == "/ping") {
+        return new TPingHandler();
+    }
 
     if (uri == "/api/telegram") {
         return new TClientHandler<TTelegramClient>(Ctx_);

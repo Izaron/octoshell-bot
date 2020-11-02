@@ -2,35 +2,20 @@
 #include <memory>
 
 #include <Poco/Util/ServerApplication.h>
-#include <Poco/Logger.h>
-#include <Poco/SimpleFileChannel.h>
-#include <Poco/ConsoleChannel.h>
-#include <Poco/AutoPtr.h>
-#include <Poco/PatternFormatter.h>
-#include <Poco/FormattingChannel.h>
 
 #include "context.h"
 
 using namespace Poco;
 
-void InitLogs() {
-    //AutoPtr<SimpleFileChannel> channel(new SimpleFileChannel);
-    //channel->setProperty("path", "octoshell.log");
-    AutoPtr<Poco::ConsoleChannel> channel(new ConsoleChannel);
-
-    AutoPtr<PatternFormatter> patternFormatter(new PatternFormatter);
-    patternFormatter->setProperty("pattern", "[%Y/%b/%d %H:%M:%S] [thread %I] [%p] [%s] %t");
-
-    AutoPtr<FormattingChannel> formattingChannel(new FormattingChannel(patternFormatter, channel));
-    Logger::root().setChannel(formattingChannel.get());
-}
-
 class TApp final : public Util::ServerApplication {
 private:
-	int main(const std::vector<std::string>& args) override {
-        InitLogs();
+    int main(const std::vector<std::string>& args) override {
+        if (args.size() < 1) {
+            std::cerr << "You should provide path to .properties file" << std::endl;
+            return 1;
+        }
 
-        NOctoshell::TContext ctx;
+        NOctoshell::TContext ctx(args[0]);
 
         ctx.StartServer();
         waitForTerminationRequest();
