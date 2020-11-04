@@ -17,6 +17,7 @@ ADD_EXECUTABLE(octoshellbot
     src/handlers.cpp
     src/main.cpp
     src/mongo.cpp
+    src/states/auth_new_email_state_processor.cpp
     src/states/auth_settings_state_processor.cpp
     src/states/locale_settings_state_processor.cpp
     src/states/main_menu_state_processor.cpp
