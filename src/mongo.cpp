@@ -47,7 +47,7 @@ TUserState TMongo::Load(std::uint64_t userId) {
     return state;
 }
 
-void TMongo::Store(const NOctoshell::TUserState& state) {
+void TMongo::Store(const TUserState& state) {
     auto& logger = Poco::Logger::get("mongo");
 
     std::string json = pb2json(state);

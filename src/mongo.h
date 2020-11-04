@@ -13,8 +13,8 @@ class TMongo {
 public:
     TMongo(TContext& ctx);
 
-    NOctoshell::TUserState Load(std::uint64_t userId);
-    void Store(const NOctoshell::TUserState& state);
+    TUserState Load(std::uint64_t userId);
+    void Store(const TUserState& state);
 
 private:
     TContext& Ctx_;

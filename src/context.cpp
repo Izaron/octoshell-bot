@@ -85,6 +85,7 @@ void SetTelegramWebhook(const Util::PropertyFileConfiguration& config) {
 TContext::TContext(const std::string& configPath)
     : Config_{new Util::PropertyFileConfiguration(configPath)}
     , HttpServer_{ConstructHttpServer(*this)}
+    , StatesHolder_{*this}
     , Mongo_{*this}
 {
     InitLogs(*Config_);
@@ -114,12 +115,10 @@ std::vector<TReaction> TContext::OnUpdate(TUpdate update) {
     Logger().information("working with update from %" PRIu64, update.UserId);
 
     TUserState state = Mongo_.Load(update.UserId);
-    state.set_email("sample@tochka.com");
+    std::vector<TReaction> reactions = StatesHolder_.ProcessUpdate(update, state);
+
     Mongo_.Store(state);
-    
-    TReaction reaction;
-    reaction.Text = "You wrote: " + update.Text;
-    return {reaction};
+    return reactions;
 }
 
 } // namespace NOctoshell

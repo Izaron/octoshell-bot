@@ -8,6 +8,7 @@
 
 #include "model.h"
 #include "mongo.h"
+#include "states/states_holder.h"
 
 namespace NOctoshell {
 
@@ -28,6 +29,7 @@ private:
 private:
     Poco::AutoPtr<Poco::Util::PropertyFileConfiguration> Config_;
     std::unique_ptr<Poco::Net::HTTPServer> HttpServer_;
+    TStatesHolder StatesHolder_;
     TMongo Mongo_;
 };
 
