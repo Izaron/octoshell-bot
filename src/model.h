@@ -25,4 +25,6 @@ struct TReaction {
     bool ForceReply;
 };
 
+using TReactions = std::vector<TReaction>;
+
 } // namespace NOctoshell

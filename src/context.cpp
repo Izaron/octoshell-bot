@@ -110,12 +110,12 @@ Logger& TContext::Logger() const {
     return Logger::get("context");
 }
 
-std::vector<TReaction> TContext::OnUpdate(TUpdate update) {
+TReactions TContext::OnUpdate(TUpdate update) {
     // TODO: realize statemachine
     Logger().information("working with update from %" PRIu64, update.UserId);
 
     TUserState state = Mongo_.Load(update.UserId);
-    std::vector<TReaction> reactions = StatesHolder_.ProcessUpdate(update, state);
+    TReactions reactions = StatesHolder_.ProcessUpdate(update, state);
 
     Mongo_.Store(state);
     return reactions;

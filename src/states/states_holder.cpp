@@ -31,13 +31,13 @@ TStatesHolder::TStatesHolder(TContext& ctx)
 {
 }
 
-std::vector<TReaction> TStatesHolder::ProcessUpdate(TUpdate update, TUserState& state) {
+TReactions TStatesHolder::ProcessUpdate(TUpdate update, TUserState& state) {
     const static auto processorsMap = ConstructStatesProcessors();
 
     auto& logger = Poco::Logger::get("states_holder");
     logger.information("processing update from user %" PRIu64, update.UserId);
 
-    std::vector<TReaction> reactions;
+    TReactions reactions;
     for (const auto func : {&IStatesProcessor::OnStart, &IStatesProcessor::OnUpdate}) {
         if (const auto processor = FindStateProcessor(state, processorsMap)) {
             auto r = (processor->*func)(update, state);

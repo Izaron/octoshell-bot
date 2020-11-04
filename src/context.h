@@ -21,7 +21,7 @@ public:
 
     const Poco::Util::PropertyFileConfiguration& Config() const;
 
-    [[nodiscard]] std::vector<TReaction> OnUpdate(TUpdate update);
+    [[nodiscard]] TReactions OnUpdate(TUpdate update);
 
 private:
     Poco::Logger& Logger() const;

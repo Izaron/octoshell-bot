@@ -1,6 +1,5 @@
 #pragma once
 
-#include <unordered_map>
 #include <vector>
 
 #include <proto/user_state.pb.h>
@@ -11,12 +10,11 @@ namespace NOctoshell {
 
 class IStatesProcessor {
 public:
-    IStatesProcessor(TContext& ctx)
-        : Ctx_{ctx}
-    {};
+    virtual ~IStatesProcessor() = default;
+    IStatesProcessor(TContext& ctx) : Ctx_{ctx} {};
 
-    virtual std::vector<TReaction> OnStart(TUpdate update, TUserState& state) = 0;
-    virtual std::vector<TReaction> OnUpdate(TUpdate update, TUserState& state) = 0;
+    virtual TReactions OnStart(TUpdate update, TUserState& state) = 0;
+    virtual TReactions OnUpdate(TUpdate update, TUserState& state) = 0;
 
 protected:
     TContext& Ctx_;
