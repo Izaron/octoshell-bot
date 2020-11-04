@@ -1,6 +1,7 @@
 #include "translate.h"
 
 #include <queue>
+#include <regex>
 
 #include <Poco/Logger.h>
 
@@ -91,10 +92,18 @@ void TranslateReaction(TReaction& reaction, const TUserState_ELanguage lang, con
         return;
     }
 
-    reaction.Text = lt->Get(reaction.Text);
+    const auto func = [val = lt->Values()](std::string& text) {
+        for (const auto& [key, value] : val) {
+            if (text.find(key) != std::string::npos) {
+                text = std::regex_replace(text, std::regex(key), value);
+            }
+        }
+    };
+
+    func(reaction.Text);
     for (auto& row : reaction.Keyboard) {
         for (auto& text : row) {
-            text = lt->Get(text);
+            func(text);
         }
     }
 }

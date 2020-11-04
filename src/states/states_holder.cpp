@@ -1,6 +1,7 @@
 #include "states_holder.h"
 #include "state_processor.h"
 
+#include "auth_settings_state_processor.h"
 #include "locale_settings_state_processor.h"
 #include "main_menu_state_processor.h"
 
@@ -19,6 +20,7 @@ TProcessorsMap ConstructStatesProcessors(TContext& ctx) {
     TProcessorsMap map;
 
     map.emplace(TUserState_EState_MAIN_MENU, std::make_unique<TMainMenuStatesProcessor>(ctx));
+    map.emplace(TUserState_EState_AUTH_SETTINGS, std::make_unique<TAuthSettingsStatesProcessor>(ctx));
     map.emplace(TUserState_EState_LOCALE_SETTINGS, std::make_unique<TLocaleSettingsStatesProcessor>(ctx));
 
     return map;
