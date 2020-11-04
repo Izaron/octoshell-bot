@@ -120,6 +120,9 @@ TReactions TContext::OnUpdate(TUpdate update) {
 
     TUserState state = Mongo_.Load(update.UserId);
     TReactions reactions = StatesHolder_.ProcessUpdate(update, state);
+    for (auto& r : reactions) {
+        TranslateReaction(r, state.language(), Translate_);
+    }
 
     Mongo_.Store(state);
     return reactions;

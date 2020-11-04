@@ -1,6 +1,8 @@
 #include "telegram.h"
 #include "../context.h"
 
+#include <regex>
+
 #include <Poco/Logger.h>
 #include <Poco/URI.h>
 #include <Poco/Net/HTTPSClientSession.h>
@@ -37,6 +39,12 @@ std::string ConstructReplyMarkupJson(const TReaction::TKeyboard& keyboard) {
     std::stringstream ss;
     obj.stringify(ss);
     return ss.str();
+}
+
+std::string UrlQuote(std::string s) {
+    s = std::regex_replace(s, std::regex(" "), "%20");
+    s = std::regex_replace(s, std::regex("\n"), "%0A");
+    return s;
 }
 
 } // namespace
@@ -77,7 +85,7 @@ void TTelegramClient::SendReaction(const TUpdate& update, const TReaction& react
         ss << "&reply_markup=" << R"({"force_reply":true})";
     }
 
-    Poco::URI uri{ss.str()};
+    Poco::URI uri{UrlQuote(ss.str())};
 
     std::string path(uri.getPathAndQuery());
     if (path.empty()) {
