@@ -23,7 +23,7 @@ struct TReaction {
     
     std::string Text;
     TKeyboard Keyboard;
-    bool ForceReply;
+    bool ForceReply = false;
 };
 
 using TReactions = std::vector<TReaction>;

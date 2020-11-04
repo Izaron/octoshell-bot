@@ -11,6 +11,36 @@ using namespace Poco::Net;
 
 namespace NOctoshell {
 
+namespace {
+
+Poco::JSON::Object ConstructReplyMarkup(const TReaction::TKeyboard& keyboard) {
+    Poco::JSON::Object markup;
+    markup.set("resize_keyboard", true);
+
+    Poco::JSON::Array keyboardArr;
+    for (const auto& row : keyboard) {
+        Poco::JSON::Array keyboardRow;
+        for (const auto& text : row) {
+            Poco::JSON::Object button;
+            button.set("text", text);
+            keyboardRow.add(button);
+        }
+        keyboardArr.add(keyboardRow);
+    }
+
+    markup.set("keyboard", keyboardArr);
+    return markup;
+}
+
+std::string ConstructReplyMarkupJson(const TReaction::TKeyboard& keyboard) {
+    auto obj = ConstructReplyMarkup(keyboard);
+    std::stringstream ss;
+    obj.stringify(ss);
+    return ss.str();
+}
+
+} // namespace
+
 std::string TTelegramClient::Name() const {
     return "Telegram";
 }
@@ -40,6 +70,13 @@ void TTelegramClient::SendReaction(const TUpdate& update, const TReaction& react
     ss << "https://api.telegram.org/bot" << Ctx_.Config().getString("telegram.token") << "/sendMessage";
     ss << "?chat_id=" << std::to_string(update.UserId);
     ss << "&text=" << reaction.Text;
+    if (!reaction.Keyboard.empty()) {
+        ss << "&reply_markup=" << ConstructReplyMarkupJson(reaction.Keyboard);
+    }
+    if (reaction.ForceReply) {
+        ss << "&reply_markup=" << R"({"force_reply":true})";
+    }
+
     Poco::URI uri{ss.str()};
 
     std::string path(uri.getPathAndQuery());
