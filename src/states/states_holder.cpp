@@ -1,6 +1,8 @@
 #include "states_holder.h"
 #include "state_processor.h"
 
+#include "main_menu_state_processor.h"
+
 #include <inttypes.h>
 #include <unordered_map>
 
@@ -12,8 +14,12 @@ namespace {
 
 using TProcessorsMap = std::unordered_map<int, std::unique_ptr<IStatesProcessor>>;
 
-TProcessorsMap ConstructStatesProcessors() {
-    return {};
+TProcessorsMap ConstructStatesProcessors(TContext& ctx) {
+    TProcessorsMap map;
+
+    map.emplace(TUserState_EState_MAIN_MENU, std::make_unique<TMainMenuStatesProcessor>(ctx));
+
+    return map;
 }
 
 IStatesProcessor* FindStateProcessor(TUserState& state, const TProcessorsMap& map) {
@@ -32,13 +38,13 @@ TStatesHolder::TStatesHolder(TContext& ctx)
 }
 
 TReactions TStatesHolder::ProcessUpdate(TUpdate update, TUserState& state) {
-    const static auto processorsMap = ConstructStatesProcessors();
+    const static auto processorsMap = ConstructStatesProcessors(Ctx_);
 
     auto& logger = Poco::Logger::get("states_holder");
     logger.information("processing update from user %" PRIu64, update.UserId);
 
     TReactions reactions;
-    for (const auto func : {&IStatesProcessor::OnStart, &IStatesProcessor::OnUpdate}) {
+    for (const auto func : {&IStatesProcessor::OnUpdate, &IStatesProcessor::OnStart}) {
         if (const auto processor = FindStateProcessor(state, processorsMap)) {
             auto r = (processor->*func)(update, state);
             std::move(r.begin(), r.end(), std::inserter(reactions, reactions.end()));
