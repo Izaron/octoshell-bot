@@ -19,7 +19,7 @@ TReaction ConstructInformationReaction() {
 } // namespace
 
 TReactions TMainMenuStatesProcessor::OnStart(TUpdate update, TUserState& state) {
-    Poco::Logger::get("main_menu_processor").information("main menu on_start from user %" PRIu64, update.UserId);
+    Poco::Logger::get("main_menu_processor").information("on_start from user %" PRIu64, update.UserId);
 
     const static TReaction::TKeyboard keyboardTemplate = {
         {"main.button.show-user-projects"},
@@ -37,7 +37,7 @@ TReactions TMainMenuStatesProcessor::OnStart(TUpdate update, TUserState& state) 
 
 TReactions TMainMenuStatesProcessor::OnUpdate(TUpdate update, TUserState& state) {
     auto& logger = Poco::Logger::get("main_menu_processor");
-    logger.information("main menu on_update from user %" PRIu64, update.UserId);
+    logger.information("on_update from user %" PRIu64, update.UserId);
 
     const std::string code = TryGetTemplate(update.Text, state.language(), Ctx_.Translate());
     logger.information("Pressed button is \"%s\"", code);
