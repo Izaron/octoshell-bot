@@ -8,6 +8,7 @@
 
 #include "model.h"
 #include "mongo.h"
+#include "translate.h"
 #include "states/states_holder.h"
 
 namespace NOctoshell {
@@ -20,6 +21,7 @@ public:
     void StopServer();
 
     const Poco::Util::PropertyFileConfiguration& Config() const;
+    const TTranslate& Translate() const;
 
     [[nodiscard]] TReactions OnUpdate(TUpdate update);
 
@@ -29,6 +31,7 @@ private:
 private:
     Poco::AutoPtr<Poco::Util::PropertyFileConfiguration> Config_;
     std::unique_ptr<Poco::Net::HTTPServer> HttpServer_;
+    TTranslate Translate_;
     TStatesHolder StatesHolder_;
     TMongo Mongo_;
 };

@@ -106,6 +106,10 @@ const Util::PropertyFileConfiguration& TContext::Config() const {
     return *Config_;
 }
 
+const TTranslate& TContext::Translate() const {
+    return Translate_;
+}
+
 Logger& TContext::Logger() const {
     return Logger::get("context");
 }

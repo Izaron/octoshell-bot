@@ -19,6 +19,10 @@ ADD_EXECUTABLE(octoshellbot
     src/mongo.cpp
     src/states/main_menu_state_processor.cpp
     src/states/states_holder.cpp
+    src/translate.cpp
 )
+
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources/ru.properties DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources/en.properties DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 TARGET_LINK_LIBRARIES(octoshellbot proto ${OPENSSL_LIBRARIES} ${Poco_LIBRARIES} mongo::mongocxx_shared -lprotobuf -ljansson)
