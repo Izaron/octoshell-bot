@@ -133,7 +133,7 @@ static json_t * _pb2json(const Message& msg)
 			continue;
 
 		const std::string &name = (field->is_extension())?field->full_name():field->name();
-		json_object_set_new(root, name.c_str(), jf);
+		json_object_set_new(root, name == "UserId" ? "_id" : name.c_str(), jf);
 	}
 	return _auto.release();
 }
@@ -216,7 +216,8 @@ static void _json2pb(Message& msg, json_t *root)
 
 	for (void *i = json_object_iter(root); i; i = json_object_iter_next(root, i))
 	{
-		const char *name = json_object_iter_key(i);
+		const char *tableName = json_object_iter_key(i);
+        const char *name = strcmp(tableName, "_id") ? tableName : "UserId";
 		json_t *jf = json_object_iter_value(i);
 
 		const FieldDescriptor *field = d->FindFieldByName(name);

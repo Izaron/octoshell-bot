@@ -23,17 +23,17 @@ message TUserState {
     }
 
     message TExtraData {
-        string Key = 1 [json_name="key"];
-        string Value = 2 [json_name="value"];
+        string Key = 1;
+        string Value = 2;
     };
 
     // Data
-    int64 UserId = 1 [json_name="user_id"];
-    EState State = 2 [json_name="state"];
-    ELanguage Language = 3 [json_name="language"];
+    int64 UserId = 1;
+    EState State = 2;
+    ELanguage Language = 3;
 
-    string Token = 4 [json_name="token"];
-    string Email = 5 [json_name="email"];
+    string Token = 4;
+    string Email = 5;
 
-    repeated TExtraData ExtraData = 6 [json_name="extra_data"];
+    repeated TExtraData ExtraData = 6;
 };

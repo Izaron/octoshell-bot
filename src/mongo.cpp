@@ -28,26 +28,39 @@ TUserState TMongo::Load(std::uint64_t userId) {
     auto& logger = Poco::Logger::get("mongo");
 
     TUserState state;
-
     logger.information("getting state for userId %" PRIu64, userId);
 
-    auto stateDoc = StatesCollection_.find_one(document{} << "UserId" << static_cast<std::int64_t>(userId) << finalize);
-    if (stateDoc) {
-        std::string json = bsoncxx::to_json(*stateDoc);
-        logger.information("got state for userId %" PRIu64 ": %s", userId, json);
-        json2pb(state, json.c_str(), json.length());
-    } else {
-        logger.information("got no state for userId %" PRIu64, userId);
-        state.set_userid(userId);
+    try {
+        auto stateDoc = StatesCollection_.find_one(document{} << "_id" << static_cast<std::int64_t>(userId) << finalize);
+        if (stateDoc) {
+            std::string json = bsoncxx::to_json(*stateDoc);
+            logger.information("got state for userId %" PRIu64 ": %s", userId, json);
+            json2pb(state, json.c_str(), json.length());
+        } else {
+            logger.information("got no state for userId %" PRIu64, userId);
+            state.set_userid(userId);
+        }
+    } catch (const std::exception& e) {
+        logger.error(e.what());
     }
 
     return state;
 }
 
 void TMongo::Store(const NOctoshell::TUserState& state) {
+    auto& logger = Poco::Logger::get("mongo");
+
     std::string json = pb2json(state);
-    auto stateDoc = bsoncxx::from_json(std::move(json));
-    StatesCollection_.insert_one(std::move(stateDoc));
+    logger.information("storing state %s", json);
+
+    try {
+        auto filter = document{} << "_id" << static_cast<std::int64_t>(state.userid()) << finalize;
+        auto stateDoc = bsoncxx::from_json(std::move(json));
+
+        StatesCollection_.replace_one(std::move(filter), std::move(stateDoc), mongocxx::options::replace().upsert(true));
+    } catch (const std::exception& e) {
+        logger.error(e.what());
+    }
 }
 
 } // namespace NOctoshell

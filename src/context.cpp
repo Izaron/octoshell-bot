@@ -114,7 +114,8 @@ std::vector<TReaction> TContext::OnUpdate(TUpdate update) {
     Logger().information("working with update from %" PRIu64, update.UserId);
 
     TUserState state = Mongo_.Load(update.UserId);
-    //Mongo_.Store(state);
+    state.set_email("sample@tochka.com");
+    Mongo_.Store(state);
     
     TReaction reaction;
     reaction.Text = "You wrote: " + update.Text;
