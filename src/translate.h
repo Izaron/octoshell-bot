@@ -13,10 +13,13 @@ namespace NOctoshell {
 class TLangTranslate {
 public:
     TLangTranslate(const std::string& lang);
+
     std::string Get(const std::string& key) const;
+    const std::vector<std::pair<std::string, std::string>>& Values() const;
 
 private:
     Poco::AutoPtr<Poco::Util::PropertyFileConfiguration> Map_;
+    std::vector<std::pair<std::string, std::string>> Values_;
 };
 
 class TTranslate {
@@ -30,6 +33,7 @@ private:
     std::unordered_map<std::string, TLangTranslate> LangMap_;
 };
 
-void TranslateReaction(TReaction& reaction, const TUserState& state, const TTranslate& translate);
+void TranslateReaction(TReaction& reaction, const TUserState_ELanguage lang, const TTranslate& translate);
+std::string TryGetTemplate(const std::string& text, const TUserState_ELanguage lang, const TTranslate& translate);
 
 } // namespace NOctoshell

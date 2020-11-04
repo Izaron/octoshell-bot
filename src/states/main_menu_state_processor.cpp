@@ -23,14 +23,16 @@ TReactions TMainMenuStatesProcessor::OnStart(TUpdate update, TUserState& state) 
     reaction.Text = "main.message";
     reaction.Keyboard = keyboardTemplate;
 
-    TranslateReaction(reaction, state, Ctx_.Translate());
-
+    TranslateReaction(reaction, state.language(), Ctx_.Translate());
     return {std::move(reaction)};
 }
 
 TReactions TMainMenuStatesProcessor::OnUpdate(TUpdate update, TUserState& state) {
     auto& logger = Poco::Logger::get("main_menu_processor");
     logger.information("main menu on_update from user %" PRIu64, update.UserId);
+
+    const std::string code = TryGetTemplate(update.Text, state.language(), Ctx_.Translate());
+    logger.information("Pressed button is \"%s\"", code);
 
     return {};
 }
