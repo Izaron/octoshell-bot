@@ -1,5 +1,7 @@
 #include "translate.h"
 
+#include <Poco/Logger.h>
+
 namespace NOctoshell {
 
 namespace {
@@ -33,6 +35,31 @@ std::string TTranslate::Get(const std::string& lang, const std::string& key) con
 
 const TLangTranslate& TTranslate::LangTranslate(const std::string& lang) const {
     return LangMap_.find(lang)->second;
+}
+
+void TranslateReaction(TReaction& reaction, const TUserState& state, const TTranslate& translate) {
+    const TLangTranslate* lt = [lang = state.language(), &translate]() {
+        switch (lang) {
+        case TUserState_ELanguage_EN:
+            return &translate.LangTranslate("en");
+        case TUserState_ELanguage_RU:
+            return &translate.LangTranslate("ru");
+        default:
+            return static_cast<const TLangTranslate*>(nullptr);
+        }
+    }();
+
+    if (!lt) {
+        Poco::Logger::get("translate").error("unknown language");
+        return;
+    }
+
+    reaction.Text = lt->Get(reaction.Text);
+    for (auto& row : reaction.Keyboard) {
+        for (auto& text : row) {
+            text = lt->Get(text);
+        }
+    }
 }
 
 } // namespace NOctoshell

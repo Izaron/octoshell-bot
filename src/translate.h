@@ -5,6 +5,9 @@
 #include <string>
 #include <unordered_map>
 
+#include "model.h"
+#include <proto/user_state.pb.h>
+
 namespace NOctoshell {
 
 class TLangTranslate {
@@ -26,5 +29,7 @@ public:
 private:
     std::unordered_map<std::string, TLangTranslate> LangMap_;
 };
+
+void TranslateReaction(TReaction& reaction, const TUserState& state, const TTranslate& translate);
 
 } // namespace NOctoshell

@@ -19,9 +19,10 @@ struct TUpdate {
  */
 struct TReaction {
     using TKeyboardRow = std::vector<std::string>;
+    using TKeyboard = std::vector<TKeyboardRow>;
     
     std::string Text;
-    std::vector<TKeyboardRow> Keyboard;
+    TKeyboard Keyboard;
     bool ForceReply;
 };
 

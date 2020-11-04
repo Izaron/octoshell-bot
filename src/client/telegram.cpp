@@ -16,12 +16,16 @@ std::string TTelegramClient::Name() const {
 }
 
 TUpdate TTelegramClient::ParseUpdate(const Poco::JSON::Object& data) const {
+    Poco::Logger::get("telegram").information("parsing telegram update");
+
     TUpdate update;
 
     if (data.has("message")) {
         auto msg = data.getObject("message");
-        if (msg->has("from") && msg->has("text")) {
+        if (msg->has("from")) {
             update.UserId = msg->getObject("from")->getValue<std::uint64_t>("id");
+        }
+        if (msg->has("text")) {
             update.Text = msg->getValue<std::string>("text");
         }
     }
