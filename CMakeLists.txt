@@ -13,6 +13,7 @@ INCLUDE_DIRECTORIES(/usr/local/include ${OPENSSL_INCLUDE_DIR} ${CMAKE_CURRENT_BI
 ADD_EXECUTABLE(octoshellbot
     contrib/json2pb.cc
     src/client/telegram.cpp
+    src/client/vkontakte.cpp
     src/context.cpp
     src/handlers.cpp
     src/main.cpp

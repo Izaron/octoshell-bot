@@ -1,7 +1,8 @@
-#include "telegram.h"
+#include "vkontakte.h"
 #include "../context.h"
 
 #include <regex>
+#include <sstream>
 
 #include <Poco/Logger.h>
 #include <Poco/URI.h>
@@ -17,20 +18,25 @@ namespace {
 
 Poco::JSON::Object ConstructReplyMarkup(const TReaction::TKeyboard& keyboard) {
     Poco::JSON::Object markup;
-    markup.set("resize_keyboard", true);
+    markup.set("one_time", false);
+    markup.set("inline", false);
 
     Poco::JSON::Array keyboardArr;
     for (const auto& row : keyboard) {
         Poco::JSON::Array keyboardRow;
         for (const auto& text : row) {
+            Poco::JSON::Object action;
+            action.set("type", "text");
+            action.set("label", text);
+
             Poco::JSON::Object button;
-            button.set("text", text);
+            button.set("action", action);
             keyboardRow.add(button);
         }
         keyboardArr.add(keyboardRow);
     }
 
-    markup.set("keyboard", keyboardArr);
+    markup.set("buttons", keyboardArr);
     return markup;
 }
 
@@ -49,37 +55,33 @@ std::string UrlQuote(std::string s) {
 
 } // namespace
 
-TUpdate TTelegramClient::ParseUpdate(const Poco::JSON::Object& data) const {
-    Poco::Logger::get("telegram").information("parsing telegram update");
+TUpdate TVkontakteClient::ParseUpdate(const Poco::JSON::Object& data) const {
+    Poco::Logger::get("vkontakte").information("parsing vkontakte update");
 
     TUpdate update;
-
-    if (data.has("message")) {
-        auto msg = data.getObject("message");
-        if (msg->has("from")) {
-            update.UserId = msg->getObject("from")->getValue<std::uint64_t>("id");
-        }
-        if (msg->has("text")) {
+    if (data.has("object")) {
+        auto obj = data.getObject("object");
+        if (obj->has("message")) {
+            auto msg = obj->getObject("message");
+            update.UserId = msg->getValue<std::uint64_t>("peer_id");
             update.Text = msg->getValue<std::string>("text");
         }
     }
     return update;
 }
 
-void TTelegramClient::SendReaction(const TUpdate& update, const TReaction& reaction) const {
-    auto& logger = Poco::Logger::get("telegram");
-    logger.information("send telegram reaction");
+void TVkontakteClient::SendReaction(const TUpdate& update, const TReaction& reaction) const {
+    auto& logger = Poco::Logger::get("vkontakte");
+    logger.information("send vkontakte reaction");
 
     std::stringstream ss;
-    ss << "https://api.telegram.org/bot" << Ctx_.Config().getString("telegram.token") << "/sendMessage";
-    ss << "?chat_id=" << std::to_string(update.UserId);
-    ss << "&text=" << reaction.Text;
-    if (!reaction.Keyboard.empty()) {
-        ss << "&reply_markup=" << UrlQuote(ConstructReplyMarkupJson(reaction.Keyboard));
-    }
-    if (reaction.ForceReply) {
-        ss << "&reply_markup=" << R"({"force_reply":true})";
-    }
+    ss << "https://api.vk.com/method/messages.send";
+    ss << "?message=" << UrlQuote(reaction.Text);
+    ss << "&peer_id=" << update.UserId;
+    ss << "&access_token=" << Ctx_.Config().getString("vk.access-token");
+    ss << "&v=" << "5.124";
+    ss << "&random_id=" << "0";
+    ss << "&keyboard=" << UrlQuote(ConstructReplyMarkupJson(reaction.Keyboard));
 
     Poco::URI uri{UrlQuote(ss.str())};
 
@@ -90,6 +92,7 @@ void TTelegramClient::SendReaction(const TUpdate& update, const TReaction& react
 
     HTTPSClientSession session(uri.getHost(), uri.getPort());
     HTTPRequest request(HTTPRequest::HTTP_POST, path, HTTPMessage::HTTP_1_1);
+    request.setContentLength(0);
     session.sendRequest(request);
 
     HTTPResponse response;

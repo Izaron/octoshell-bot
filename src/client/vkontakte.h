@@ -4,7 +4,7 @@
 
 namespace NOctoshell {
 
-class TTelegramClient final : public IClient {
+class TVkontakteClient final : public IClient {
 public:
     using IClient::IClient;
 
