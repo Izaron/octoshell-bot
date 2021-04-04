@@ -7,7 +7,7 @@
 namespace NOctoshell {
 
 /*
- * Update from a messager
+ * Update from a messenger
  */
 struct TUpdate {
     std::uint64_t UserId;

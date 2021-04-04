@@ -1,6 +1,7 @@
 #include "auth_settings_state_processor.h"
-#include "../translate.h"
+#include "../auth_status.h"
 #include "../context.h"
+#include "../translate.h"
 
 #include <Poco/Logger.h>
 
@@ -65,8 +66,10 @@ TReactions TAuthSettingsStatesProcessor::OnUpdate(TUpdate update, TUserState& st
     }
 
     if (code == "auth.button.check-connection") {
-        // TODO: do
-        return {};
+        const EAuthStatus authStatus = TryAuth(Ctx_.Octoshell(), state);
+        TReaction reaction;
+        reaction.Text = AuthToTemplateMap.at(authStatus);
+        return {std::move(reaction)};
     }
 
     if (code == "auth.button.back") {

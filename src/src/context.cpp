@@ -42,7 +42,7 @@ void InitLogs(const Util::PropertyFileConfiguration& config) {
     }
 
     AutoPtr<PatternFormatter> patternFormatter(new PatternFormatter);
-    patternFormatter->setProperty("pattern", "[%Y/%b/%d %H:%M:%S] [thread %I] [%p] [%s] %t");
+    patternFormatter->setProperty("pattern", "[%Y/%b/%d %H:%M:%S.%i] [thread %I] [%p] [%s] %t");
 
     AutoPtr<FormattingChannel> formattingChannel(new FormattingChannel(patternFormatter, channel));
     Logger::root().setChannel(formattingChannel.get());
@@ -87,6 +87,7 @@ TContext::TContext(const std::string& configPath)
     , HttpServer_{ConstructHttpServer(*this)}
     , StatesHolder_{*this}
     , Mongo_{*this}
+    , Octoshell_{*this}
 {
     InitLogs(*Config_);
     SetTelegramWebhook(*Config_);
@@ -108,6 +109,10 @@ const Util::PropertyFileConfiguration& TContext::Config() const {
 
 const TTranslate& TContext::Translate() const {
     return Translate_;
+}
+
+TOctoshell& TContext::Octoshell() {
+    return Octoshell_;
 }
 
 Logger& TContext::Logger() const {

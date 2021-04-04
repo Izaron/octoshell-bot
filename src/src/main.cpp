@@ -11,11 +11,12 @@ class TApp final : public Util::ServerApplication {
 private:
     int main(const std::vector<std::string>& args) override {
         if (args.size() < 1) {
-            std::cerr << "You should provide path to .properties file" << std::endl;
+            std::cerr << "Please provide path to .properties file" << std::endl;
             return 1;
         }
 
-        NOctoshell::TContext ctx(args[0]);
+        const std::string& configPath = args[0];
+        NOctoshell::TContext ctx(configPath);
 
         ctx.StartServer();
         waitForTerminationRequest();

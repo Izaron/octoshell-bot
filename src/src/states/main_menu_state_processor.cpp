@@ -3,8 +3,10 @@
 #include "../context.h"
 
 #include <Poco/Logger.h>
+#include <Poco/JSON/Parser.h>
 
 #include <inttypes.h>
+#include <sstream>
 
 namespace NOctoshell {
 
@@ -13,6 +15,42 @@ namespace {
 TReaction ConstructInformationReaction() {
     TReaction reaction;
     reaction.Text = "main.information";
+    return reaction;
+}
+
+TReaction ConstructUserProjectsReaction(TOctoshell& octoshell, const TUserState& state) {
+    TReaction reaction;
+
+    const std::string response = octoshell.SendQueryWithAuth(state, {{"method", "user_projects"}});
+
+    Poco::JSON::Parser parser;
+    auto result = parser.parse(response);
+    auto object = result.extract<Poco::JSON::Object::Ptr>();
+
+    std::string status = object->getValue<std::string>("status");
+    if (status == "fail") {
+        reaction.Text = "main.fail-auth";
+    } else {
+        auto projArr = object->getArray("projects");
+
+        std::stringstream ss;
+        ss << "main.projects.header " << projArr->size() << "\n";
+        for (size_t i = 0; i < projArr->size(); ++i) {
+            auto proj = projArr->getObject(i);
+            ss << "\n";
+            ss << "main.projects.number" << i + 1 << "\n";
+            ss << "main.projects.login " << "\"" << proj->getValue<std::string>("login") << "\"\n";
+            ss << "main.projects.title " << "\"" << proj->getValue<std::string>("title") << "\"\n";
+            if (proj->getValue<bool>("owner")) {
+                ss << "main.projects.is-owner" << "\n";
+            } else {
+                ss << "main.projects.is-not-owner" << "\n";
+            }
+        }
+
+        reaction.Text = ss.str();
+    }
+
     return reaction;
 }
 
@@ -48,8 +86,7 @@ TReactions TMainMenuStatesProcessor::OnUpdate(TUpdate update, TUserState& state)
     }
 
     if (code == "main.button.show-user-projects") {
-        // TODO: show
-        return {};
+        return {ConstructUserProjectsReaction(Ctx_.Octoshell(), state)};
     }
 
     if (code == "main.button.show-tickets") {

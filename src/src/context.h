@@ -8,8 +8,9 @@
 
 #include "model.h"
 #include "mongo.h"
-#include "translate.h"
+#include "octoshell.h"
 #include "states/states_holder.h"
+#include "translate.h"
 
 namespace NOctoshell {
 
@@ -22,6 +23,7 @@ public:
 
     const Poco::Util::PropertyFileConfiguration& Config() const;
     const TTranslate& Translate() const;
+    TOctoshell& Octoshell();
 
     [[nodiscard]] TReactions OnUpdate(TUpdate update);
 
@@ -34,6 +36,7 @@ private:
     TTranslate Translate_;
     TStatesHolder StatesHolder_;
     TMongo Mongo_;
+    TOctoshell Octoshell_;
 };
 
 } // namespace NOctoshell
