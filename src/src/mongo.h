@@ -14,6 +14,7 @@ public:
     TMongo(TContext& ctx);
 
     TUserState Load(std::uint64_t userId, const TUserState_ESource source);
+    std::vector<TUserState> LoadByAuth(const std::string& email, const std::string& token);
     void Store(const TUserState& state);
 
 private:

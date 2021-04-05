@@ -23,6 +23,7 @@ public:
 
     const Poco::Util::PropertyFileConfiguration& Config() const;
     const TTranslate& Translate() const;
+    TMongo& Mongo();
     TOctoshell& Octoshell();
 
     [[nodiscard]] TReactions OnUpdate(TUpdate update, const TUserState_ESource source);

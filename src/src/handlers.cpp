@@ -3,17 +3,30 @@
 #include "client/client.h"
 #include "client/telegram.h"
 #include "client/vkontakte.h"
+#include <proto/user_state.pb.h>
 
 #include <Poco/Net/HTTPServerResponse.h>
 #include <Poco/JSON/Parser.h>
 
+#include <exception>
 #include <inttypes.h>
+#include <sstream>
 
 using namespace Poco::Net;
 
 namespace NOctoshell {
 
 namespace {
+
+std::unique_ptr<IClient> ConstructClient(const TUserState_ESource source, TContext& ctx) {
+    if (source == TUserState_ESource_TELEGRAM) {
+        return std::make_unique<TTelegramClient>(ctx);
+    } else if (source == TUserState_ESource_VKONTAKTE) {
+        return std::make_unique<TVkontakteClient>(ctx);
+    } else {
+        throw std::runtime_error("unknown client source");
+    }
+}
 
 std::string ReadInput(HTTPServerRequest& request) {
     std::istream& is = request.stream();
@@ -101,10 +114,79 @@ private:
 class TDummyHandler final : public HTTPRequestHandler {
 public:
     void handleRequest(HTTPServerRequest& request, HTTPServerResponse& response) override {
+        auto& logger = Poco::Logger::get("dummy_handler");
+        logger.information("Request input: %s", ReadInput(request));
+
         response.setStatus(HTTPServerResponse::HTTP_IM_A_TEAPOT);
         response.setContentType("text/plain");
         response.send() << "I Am A Teapot";
     }
+};
+
+class TNotifyHandler final : public HTTPRequestHandler {
+public:
+    TNotifyHandler(TContext& ctx)
+        : Ctx_{ctx}
+    {}
+
+    void handleRequest(HTTPServerRequest& request, HTTPServerResponse& response) override {
+        auto& logger = Poco::Logger::get("notify_handler");
+
+        const std::string in = ReadInput(request);
+        logger.information("Notify body: %s", in);
+
+        // immediate answer
+        response.setStatus(HTTPServerResponse::HTTP_OK);
+        response.setContentType("text/plain");
+        response.send() << "ok";
+
+        // working with input
+        Poco::JSON::Parser parser;
+        auto result = parser.parse(in);
+        auto object = result.extract<Poco::JSON::Object::Ptr>();
+
+        const std::string& uri = request.getURI();
+        if (uri == "/notify/ticket") {
+            OnNotifyTicket(object);
+        } else {
+            logger.warning("Unknown uri!");
+        }
+    }
+
+private:
+    void OnNotifyTicket(Poco::JSON::Object::Ptr object) {
+        if (!object->has("token")) {
+            return;
+        }
+
+        const std::string email = object->getValue<std::string>("email");
+        const std::string token = object->getValue<std::string>("token");
+        const std::string event = object->getValue<std::string>("event");
+        const std::string subject = object->getValue<std::string>("subject");
+
+        auto& mongo = Ctx_.Mongo();
+        std::vector<TUserState> states = mongo.LoadByAuth(email, token);
+
+        for (const TUserState& state : states) {
+            auto client = ConstructClient(state.source(), Ctx_);
+
+            TUpdate update;
+            update.UserId = state.userid();
+
+            TReaction reaction;
+            std::stringstream ss;
+            ss << "notify.ticket.header" << "\n"
+                << "notify.ticket.subject" << ": \"" << subject << "\"\n"
+                << "notify.ticket.status." << event << "\n";
+            reaction.Text = ss.str();
+            TranslateReaction(reaction, state.language(), Ctx_.Translate());
+
+            client->SendReaction(update, reaction);
+        }
+    }
+
+private:
+    TContext& Ctx_;
 };
 
 class TPingHandler final : public HTTPRequestHandler {
@@ -126,7 +208,7 @@ THandlerFactory::THandlerFactory(TContext& ctx)
 HTTPRequestHandler* THandlerFactory::createRequestHandler(const HTTPServerRequest& request) {
     auto& logger = Poco::Logger::get("handlers");
 
-    const auto& uri = request.getURI();
+    const std::string& uri = request.getURI();
     logger.information("Got request at URI %s", uri);
 
     if (uri == "/ping") {
@@ -139,6 +221,10 @@ HTTPRequestHandler* THandlerFactory::createRequestHandler(const HTTPServerReques
 
     if (uri == "/api/vkontakte") {
         return new TClientHandler<TVkontakteClient>(Ctx_);
+    }
+
+    if (uri.rfind("/notify", 0) == 0) {
+        return new TNotifyHandler(Ctx_);
     }
 
     return new TDummyHandler();

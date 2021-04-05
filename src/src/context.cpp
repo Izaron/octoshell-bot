@@ -111,6 +111,10 @@ const TTranslate& TContext::Translate() const {
     return Translate_;
 }
 
+TMongo& TContext::Mongo() {
+    return Mongo_;
+}
+
 TOctoshell& TContext::Octoshell() {
     return Octoshell_;
 }

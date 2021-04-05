@@ -52,6 +52,28 @@ TUserState TMongo::Load(std::uint64_t userId, const TUserState_ESource source) {
     return state;
 }
 
+std::vector<TUserState> TMongo::LoadByAuth(const std::string& email, const std::string& token) {
+    auto& logger = Poco::Logger::get("mongo");
+    logger.information("getting all states for email %s, token %s", email, token);
+
+    std::vector<TUserState> states;
+    try {
+        mongocxx::cursor cursor = StatesCollection_.find(document{} << "Email" << email << "Token" << token << finalize);
+        for (auto doc : cursor) {
+            std::string json = bsoncxx::to_json(doc);
+
+            TUserState state;
+            json2pb(state, json.c_str(), json.length());
+            states.push_back(std::move(state));
+        }
+    } catch (const std::exception& e) {
+        logger.error(e.what());
+    }
+
+    logger.information("got %d states for email %s, token %s", static_cast<int>(states.size()), email, token);
+    return states;
+}
+
 void TMongo::Store(const TUserState& state) {
     auto& logger = Poco::Logger::get("mongo");
 
