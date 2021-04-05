@@ -12,6 +12,14 @@ namespace NOctoshell {
 
 namespace {
 
+std::string GetStringSafe(Poco::JSON::Object::Ptr json, const std::string& key, const std::string defaultValue = "<empty>") {
+    try {
+        return json->getValue<std::string>(key);
+    } catch (...) {
+        return defaultValue;
+    }
+}
+
 TReaction ConstructInformationReaction() {
     TReaction reaction;
     reaction.Text = "main.information";
@@ -54,6 +62,62 @@ TReaction ConstructUserProjectsReaction(TOctoshell& octoshell, const TUserState&
     return reaction;
 }
 
+TReaction ConstructTicketsReaction(TOctoshell& octoshell, const TUserState& state) {
+    auto& logger = Poco::Logger::get("main_menu_processor");
+
+    TReaction reaction;
+    const std::string response = octoshell.SendQueryWithAuth(state, {{"method", "user_tickets"}});
+
+    Poco::JSON::Parser parser;
+    auto result = parser.parse(response);
+    auto object = result.extract<Poco::JSON::Object::Ptr>();
+
+    std::string status = object->getValue<std::string>("status");
+    if (status == "fail") {
+        reaction.Text = "main.fail-auth";
+    } else {
+        auto ticketsArr = object->getArray("tickets");
+
+        std::stringstream ss;
+        int ticketsCount = 0;
+
+        for (size_t i = 0; i < ticketsArr->size(); ++i) {
+            try {
+                auto ticket = ticketsArr->getObject(i);
+
+                const std::string locale = state.language() == TUserState_ELanguage_EN ? "en" : "ru";
+                const std::string who = "main.tickets.who-is-" + ticket->getValue<std::string>("who");
+                const std::string topicName = GetStringSafe(ticket, "topic_name_" + locale);
+                const std::string projectTitle = GetStringSafe(ticket, "project_title");
+                const std::string clusterName = GetStringSafe(ticket, "cluster_name_" + locale);
+                const std::string subject = ticket->getValue<std::string>("subject");
+                const std::string message = ticket->getValue<std::string>("message");
+                const std::string state = ticket->getValue<std::string>("state");
+
+                ss << "\n";
+                ss << "main.tickets.number" << ticketsCount + 1 << "\n";
+                ss << "main.tickets.who-status" << ": " << who << "\n";
+                ss << "main.tickets.topic" << ": " << topicName << "\n";
+                ss << "main.tickets.project" << ": " << projectTitle << "\n";
+                ss << "main.tickets.cluster" << ": " << clusterName << "\n";
+                ss << "main.tickets.subject-title" << ": " << subject << "\n";
+                ss << "main.tickets.state-title" << ": " << "main.tickets.state." << state << "\n";
+                ss << "main.tickets.desc" << ": " << message << "\n";
+
+                ++ticketsCount;
+            } catch (...) {
+                logger.warning("skip ticket %d", i);
+            }
+        }
+
+        std::stringstream finalSs;
+        finalSs << "main.tickets.header" << " " << ticketsCount << "\n" << ss.str();
+        reaction.Text = finalSs.str();
+    }
+
+    return reaction;
+}
+
 } // namespace
 
 TReactions TMainMenuStatesProcessor::OnStart(TUpdate update, TUserState& state) {
@@ -90,8 +154,7 @@ TReactions TMainMenuStatesProcessor::OnUpdate(TUpdate update, TUserState& state)
     }
 
     if (code == "main.button.show-tickets") {
-        // TODO: show
-        return {};
+        return {ConstructTicketsReaction(Ctx_.Octoshell(), state)};
     }
 
     if (code == "main.button.create-tickets") {
