@@ -103,4 +103,8 @@ void TVkontakteClient::SendReaction(const TUpdate& update, const TReaction& reac
     logger.information("sendMessage response: code %d, reason %s, body %s", static_cast<int>(response.getStatus()), response.getReason(), responseStream.str());
 }
 
+TUserState_ESource TVkontakteClient::Source() const {
+    return TUserState_ESource_VKONTAKTE;
+}
+
 } // namespace NOctoshell

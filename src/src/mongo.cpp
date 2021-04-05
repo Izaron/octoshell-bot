@@ -24,26 +24,31 @@ TMongo::TMongo(TContext& ctx)
 {
 }
 
-TUserState TMongo::Load(std::uint64_t userId) {
+TUserState TMongo::Load(std::uint64_t userId, const TUserState_ESource source) {
     auto& logger = Poco::Logger::get("mongo");
-
-    TUserState state;
     logger.information("getting state for userId %" PRIu64, userId);
 
     try {
-        auto stateDoc = StatesCollection_.find_one(document{} << "_id" << static_cast<std::int64_t>(userId) << finalize);
-        if (stateDoc) {
-            std::string json = bsoncxx::to_json(*stateDoc);
-            logger.information("got state for userId %" PRIu64 ": %s", userId, json);
+        mongocxx::cursor cursor = StatesCollection_.find(document{} << "_id" << static_cast<std::int64_t>(userId) << finalize);
+        for (auto doc : cursor) {
+            std::string json = bsoncxx::to_json(doc);
+
+            TUserState state;
             json2pb(state, json.c_str(), json.length());
-        } else {
-            logger.information("got no state for userId %" PRIu64, userId);
-            state.set_userid(userId);
+
+            if (state.source() == source) {
+                logger.information("got state for userId %" PRIu64 ": %s", userId, json);
+                return state;
+            }
         }
     } catch (const std::exception& e) {
         logger.error(e.what());
     }
 
+    logger.information("got no state for userId %" PRIu64, userId);
+
+    TUserState state;
+    state.set_userid(userId);
     return state;
 }
 

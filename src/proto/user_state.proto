@@ -22,6 +22,11 @@ message TUserState {
         TICKET_MESSAGE_CHOOSE = 9;
     }
 
+    enum ESource {
+        TELEGRAM = 0;
+        VKONTAKTE = 1;
+    }
+
     // Data
     int64 UserId = 1;
     EState State = 2;
@@ -31,4 +36,5 @@ message TUserState {
     string Email = 5;
 
     map<string, string> ExtraData = 6;
+    ESource Source = 7;
 };

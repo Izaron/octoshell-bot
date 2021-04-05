@@ -10,6 +10,7 @@ public:
 
     TUpdate ParseUpdate(const Poco::JSON::Object& data) const override;
     void SendReaction(const TUpdate& update, const TReaction& reaction) const override;
+    TUserState_ESource Source() const override;
 };
 
 } // namespace NOctoshell

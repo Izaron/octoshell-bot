@@ -100,4 +100,8 @@ void TTelegramClient::SendReaction(const TUpdate& update, const TReaction& react
     logger.information("sendMessage response: code %d, reason %s, body %s", static_cast<int>(response.getStatus()), response.getReason(), responseStream.str());
 }
 
+TUserState_ESource TTelegramClient::Source() const {
+    return TUserState_ESource_TELEGRAM;
+}
+
 } // namespace NOctoshell

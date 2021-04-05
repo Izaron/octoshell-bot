@@ -13,7 +13,7 @@ class TMongo {
 public:
     TMongo(TContext& ctx);
 
-    TUserState Load(std::uint64_t userId);
+    TUserState Load(std::uint64_t userId, const TUserState_ESource source);
     void Store(const TUserState& state);
 
 private:

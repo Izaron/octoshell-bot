@@ -84,7 +84,7 @@ public:
             logger.information("new update: Text \"%s\", UserId \"%" PRIu64 "\"", update.Text, update.UserId);
 
             // send Reactions from Update
-            auto reactions = Ctx_.OnUpdate(std::move(update));
+            auto reactions = Ctx_.OnUpdate(std::move(update), Client_->Source());
             for (const auto& reaction : reactions) {
                 Client_->SendReaction(update, reaction);
             }

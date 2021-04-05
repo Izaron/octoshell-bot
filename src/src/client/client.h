@@ -4,6 +4,7 @@
 
 #include <Poco/JSON/Object.h>
 
+#include <proto/user_state.pb.h>
 #include "../model.h"
 #include "../fwd.h"
 
@@ -16,6 +17,7 @@ public:
 
     virtual TUpdate ParseUpdate(const Poco::JSON::Object& data) const = 0;
     virtual void SendReaction(const TUpdate& update, const TReaction& reaction) const = 0;
+    virtual TUserState_ESource Source() const = 0;
 
 protected:
     TContext& Ctx_;

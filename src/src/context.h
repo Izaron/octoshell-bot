@@ -25,7 +25,7 @@ public:
     const TTranslate& Translate() const;
     TOctoshell& Octoshell();
 
-    [[nodiscard]] TReactions OnUpdate(TUpdate update);
+    [[nodiscard]] TReactions OnUpdate(TUpdate update, const TUserState_ESource source);
 
 private:
     Poco::Logger& Logger() const;

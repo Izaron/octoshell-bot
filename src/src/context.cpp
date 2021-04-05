@@ -119,16 +119,17 @@ Logger& TContext::Logger() const {
     return Logger::get("context");
 }
 
-TReactions TContext::OnUpdate(TUpdate update) {
+TReactions TContext::OnUpdate(TUpdate update, const TUserState_ESource source) {
     // TODO: realize statemachine
     Logger().information("working with update from %" PRIu64, update.UserId);
 
-    TUserState state = Mongo_.Load(update.UserId);
+    TUserState state = Mongo_.Load(update.UserId, source);
     TReactions reactions = StatesHolder_.ProcessUpdate(update, state);
     for (auto& r : reactions) {
         TranslateReaction(r, state.language(), Translate_);
     }
 
+    state.set_source(source);
     Mongo_.Store(state);
     return reactions;
 }
