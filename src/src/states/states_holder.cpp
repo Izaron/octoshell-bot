@@ -1,11 +1,16 @@
 #include "states_holder.h"
 #include "state_processor.h"
 
-#include "auth_settings_state_processor.h"
 #include "auth_new_email_state_processor.h"
 #include "auth_new_token_state_processor.h"
+#include "auth_settings_state_processor.h"
 #include "locale_settings_state_processor.h"
 #include "main_menu_state_processor.h"
+#include "ticket_cluster_choose_state_processor.h"
+#include "ticket_project_choose_state_processor.h"
+#include "ticket_topic_choose_state_processor.h"
+#include "ticket_subject_choose_state_processor.h"
+#include "ticket_message_choose_state_processor.h"
 
 #include <inttypes.h>
 #include <unordered_map>
@@ -26,6 +31,11 @@ TProcessorsMap ConstructStatesProcessors(TContext& ctx) {
     map.emplace(TUserState_EState_AUTH_SETTINGS, std::make_unique<TAuthSettingsStatesProcessor>(ctx));
     map.emplace(TUserState_EState_AUTH_NEW_EMAIL, std::make_unique<TAuthNewEmailStatesProcessor>(ctx));
     map.emplace(TUserState_EState_AUTH_NEW_TOKEN, std::make_unique<TAuthNewTokenStatesProcessor>(ctx));
+    map.emplace(TUserState_EState_TICKET_PROJECT_CHOOSE, std::make_unique<TTicketProjectChooseStatesProcessor>(ctx));
+    map.emplace(TUserState_EState_TICKET_TOPIC_CHOOSE, std::make_unique<TTicketTopicChooseStatesProcessor>(ctx));
+    map.emplace(TUserState_EState_TICKET_CLUSTER_CHOOSE, std::make_unique<TTicketClusterChooseStatesProcessor>(ctx));
+    map.emplace(TUserState_EState_TICKET_SUBJECT_CHOOSE, std::make_unique<TTicketSubjectChooseStatesProcessor>(ctx));
+    map.emplace(TUserState_EState_TICKET_MESSAGE_CHOOSE, std::make_unique<TTicketMessageChooseStatesProcessor>(ctx));
 
     return map;
 }

@@ -97,9 +97,9 @@ TReaction ConstructTicketsReaction(TOctoshell& octoshell, const TUserState& stat
                 ss << "\n";
                 ss << "main.tickets.number" << ticketsCount + 1 << "\n";
                 ss << "main.tickets.who-status" << ": " << who << "\n";
-                ss << "main.tickets.topic" << ": " << topicName << "\n";
-                ss << "main.tickets.project" << ": " << projectTitle << "\n";
-                ss << "main.tickets.cluster" << ": " << clusterName << "\n";
+                ss << "main.tickets.topic-title" << ": " << topicName << "\n";
+                ss << "main.tickets.project-title" << ": " << projectTitle << "\n";
+                ss << "main.tickets.cluster-title" << ": " << clusterName << "\n";
                 ss << "main.tickets.subject-title" << ": " << subject << "\n";
                 ss << "main.tickets.state-title" << ": " << "main.tickets.state." << state << "\n";
                 ss << "main.tickets.desc" << ": " << message << "\n";

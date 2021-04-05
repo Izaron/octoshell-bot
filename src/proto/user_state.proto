@@ -22,11 +22,6 @@ message TUserState {
         TICKET_MESSAGE_CHOOSE = 9;
     }
 
-    message TExtraData {
-        string Key = 1;
-        string Value = 2;
-    };
-
     // Data
     int64 UserId = 1;
     EState State = 2;
@@ -35,5 +30,5 @@ message TUserState {
     string Token = 4;
     string Email = 5;
 
-    repeated TExtraData ExtraData = 6;
+    map<string, string> ExtraData = 6;
 };

@@ -29,6 +29,11 @@ ADD_EXECUTABLE(octoshellbot
     src/states/locale_settings_state_processor.cpp
     src/states/main_menu_state_processor.cpp
     src/states/states_holder.cpp
+    src/states/ticket_cluster_choose_state_processor.cpp
+    src/states/ticket_message_choose_state_processor.cpp
+    src/states/ticket_project_choose_state_processor.cpp
+    src/states/ticket_subject_choose_state_processor.cpp
+    src/states/ticket_topic_choose_state_processor.cpp
 
     src/translate.cpp
 )
