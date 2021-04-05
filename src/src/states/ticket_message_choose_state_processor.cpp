@@ -35,9 +35,14 @@ TReactions TTicketMessageChooseStatesProcessor::OnUpdate(TUpdate update, TUserSt
     params["method"] = "create_ticket";
 
     const std::string response = Ctx_.Octoshell().SendQueryWithAuth(state, params);
-    logger.information("Ticket creating response: \"%s\"", response);
 
-    return {};
+    Poco::JSON::Parser parser;
+    auto result = parser.parse(response);
+    auto object = result.extract<Poco::JSON::Object::Ptr>();
+
+    TReaction reaction;
+    reaction.Text = "main.tickets.response.message: " + object->getValue<std::string>("status");
+    return {std::move(reaction)};
 }
 
 } // namespace NOctoshell
