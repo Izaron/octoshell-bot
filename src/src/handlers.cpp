@@ -148,6 +148,8 @@ public:
         const std::string& uri = request.getURI();
         if (uri == "/notify/ticket") {
             OnNotifyTicket(object);
+        } else if (uri == "/notify/announcement") {
+            OnNotifyAnnouncement(object);
         } else {
             logger.warning("Unknown uri!");
         }
@@ -182,6 +184,52 @@ private:
             TranslateReaction(reaction, state.language(), Ctx_.Translate());
 
             client->SendReaction(update, reaction);
+        }
+    }
+
+    void OnNotifyAnnouncement(Poco::JSON::Object::Ptr object) {
+        auto& logger = Poco::Logger::get("notify_handler");
+        if (!object->has("users") || !object->has("announcement")) {
+            return;
+        }
+
+        const auto announce = object->getObject("announcement");
+        const auto usersArr = object->getArray("users");
+        auto& mongo = Ctx_.Mongo();
+
+        for (size_t i = 0; i < usersArr->size(); ++i) {
+            const auto& user = usersArr->getObject(i);
+            if (!user->has("email") || !user->has("token")) {
+                continue;
+            }
+            const std::string email = user->getValue<std::string>("email");
+            const std::string token = user->getValue<std::string>("token");
+            logger.information("send notify to email %s, token %s", email, token);
+
+            std::vector<TUserState> states = mongo.LoadByAuth(email, token);
+            for (const TUserState& state : states) {
+                const std::string locale = state.language() == TUserState_ELanguage_EN ? "en" : "ru";
+                auto client = ConstructClient(state.source(), Ctx_);
+
+                TUpdate update;
+                update.UserId = state.userid();
+
+                TReaction reaction;
+                std::stringstream ss;
+                ss << "notify.announcement.header" << "\n\n"
+                    << "notify.announcement.type.title" << ": " << (announce->getValue<bool>("is_special") ? "notify.announcement.type.service" : "notify.announcement.type.info") << "\n\n"
+                    << "notify.announcement.title" << ": \"" << announce->getValue<std::string>("title_" + locale) << "\"\n\n"
+                    << "notify.announcement.body" << ": \"" << announce->getValue<std::string>("body_" + locale) << "\"\n";
+
+                if (announce->has("attachment") && !announce->isNull("attachment")) {
+                    ss << "\n" << "notify.announcement.has-attachment";
+                }
+
+                reaction.Text = ss.str();
+                TranslateReaction(reaction, state.language(), Ctx_.Translate());
+
+                client->SendReaction(update, reaction);
+            }
         }
     }
 
@@ -223,6 +271,7 @@ HTTPRequestHandler* THandlerFactory::createRequestHandler(const HTTPServerReques
         return new TClientHandler<TVkontakteClient>(Ctx_);
     }
 
+    // `uri` starts with "/notify"
     if (uri.rfind("/notify", 0) == 0) {
         return new TNotifyHandler(Ctx_);
     }
