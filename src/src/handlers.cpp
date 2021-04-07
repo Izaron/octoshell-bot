@@ -144,53 +144,58 @@ public:
 
         // working with input
         Poco::JSON::Parser parser;
-        auto result = parser.parse(in);
-        auto object = result.extract<Poco::JSON::Object::Ptr>();
+        Poco::Dynamic::Var result = parser.parse(in);
 
         const std::string& uri = request.getURI();
         if (uri == "/notify/ticket") {
-            OnNotifyTicket(object);
+            OnNotifyTicket(std::move(result));
         } else if (uri == "/notify/announcement") {
-            OnNotifyAnnouncement(object);
+            OnNotifyAnnouncement(std::move(result));
         } else {
             logger.warning("Unknown uri!");
         }
     }
 
 private:
-    void OnNotifyTicket(Poco::JSON::Object::Ptr object) {
-        if (!object->has("token")) {
-            return;
-        }
+    void OnNotifyTicket(Poco::Dynamic::Var result) {
+        auto objectsArr = result.extract<Poco::JSON::Array::Ptr>();
+        for (size_t i = 0; i < objectsArr->size(); ++i) {
+            const auto object = objectsArr->getObject(i);
+            if (!object->has("token")) {
+                return;
+            }
 
-        const std::string email = object->getValue<std::string>("email");
-        const std::string token = object->getValue<std::string>("token");
-        const std::string event = object->getValue<std::string>("event");
-        const std::string subject = object->getValue<std::string>("subject");
+            const std::string email = object->getValue<std::string>("email");
+            const std::string token = object->getValue<std::string>("token");
+            const std::string event = object->getValue<std::string>("event");
+            const std::string subject = object->getValue<std::string>("subject");
 
-        auto& mongo = Ctx_.Mongo();
-        std::vector<TUserState> states = mongo.LoadByAuth(email, token);
+            auto& mongo = Ctx_.Mongo();
+            std::vector<TUserState> states = mongo.LoadByAuth(email, token);
 
-        for (const TUserState& state : states) {
-            auto client = ConstructClient(state.source(), Ctx_);
+            for (const TUserState& state : states) {
+                auto client = ConstructClient(state.source(), Ctx_);
 
-            TUpdate update;
-            update.UserId = state.userid();
+                TUpdate update;
+                update.UserId = state.userid();
 
-            TReaction reaction;
-            std::stringstream ss;
-            ss << "notify.ticket.header" << "\n"
-                << "notify.ticket.subject" << ": \"" << subject << "\"\n"
-                << "notify.ticket.status." << event << "\n";
-            reaction.Text = ss.str();
-            TranslateReaction(reaction, state.language(), Ctx_.Translate());
+                TReaction reaction;
+                std::stringstream ss;
+                ss << "notify.ticket.header" << "\n"
+                    << "notify.ticket.subject" << ": \"" << subject << "\"\n"
+                    << "notify.ticket.status." << event << "\n";
+                reaction.Text = ss.str();
+                TranslateReaction(reaction, state.language(), Ctx_.Translate());
 
-            client->SendReaction(update, reaction);
+                client->SendReaction(update, reaction);
+            }
         }
     }
 
-    void OnNotifyAnnouncement(Poco::JSON::Object::Ptr object) {
+    void OnNotifyAnnouncement(Poco::Dynamic::Var result) {
         auto& logger = Poco::Logger::get("notify_handler");
+
+        auto object = result.extract<Poco::JSON::Object::Ptr>();
         if (!object->has("users") || !object->has("announcement")) {
             return;
         }
