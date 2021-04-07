@@ -124,18 +124,28 @@ Logger& TContext::Logger() const {
 }
 
 TReactions TContext::OnUpdate(TUpdate update, const TUserState_ESource source) {
-    // TODO: realize statemachine
-    Logger().information("working with update from %" PRIu64, update.UserId);
+    auto lang = TUserState_ELanguage_EN;
+    try {
+        Logger().information("working with update from %" PRIu64, update.UserId);
 
-    TUserState state = Mongo_.Load(update.UserId, source);
-    TReactions reactions = StatesHolder_.ProcessUpdate(update, state);
-    for (auto& r : reactions) {
-        TranslateReaction(r, state.language(), Translate_);
+        TUserState state = Mongo_.Load(update.UserId, source);
+        TReactions reactions = StatesHolder_.ProcessUpdate(update, state);
+        lang = state.language();
+        for (auto& r : reactions) {
+            TranslateReaction(r, lang, Translate_);
+        }
+
+        state.set_source(source);
+        Mongo_.Store(state);
+        return reactions;
+    } catch (const std::exception& e) {
+        Logger().error(e.what());
+
+        TReaction reaction;
+        reaction.Text = "unavailable";
+        TranslateReaction(reaction, lang, Translate_);
+        return {std::move(reaction)};
     }
-
-    state.set_source(source);
-    Mongo_.Store(state);
-    return reactions;
 }
 
 } // namespace NOctoshell

@@ -62,6 +62,54 @@ TReaction ConstructUserProjectsReaction(TOctoshell& octoshell, const TUserState&
     return reaction;
 }
 
+TReaction ConstructUserJobsReaction(TOctoshell& octoshell, const TUserState& state) {
+    constexpr size_t MAXIMAL_JOBS = 5;
+
+    TReaction reaction;
+
+    const std::string response = octoshell.SendQueryWithAuth(state, {{"method", "user_jobs"}});
+
+    Poco::JSON::Parser parser;
+    auto result = parser.parse(response);
+    auto object = result.extract<Poco::JSON::Object::Ptr>();
+
+    std::string status = object->getValue<std::string>("status");
+    if (status == "fail") {
+        reaction.Text = "main.fail-auth";
+    } else {
+        auto jobsArr = object->getArray("jobs");
+
+        std::stringstream ss;
+        ss << "main.jobs.header: " << jobsArr->size() << "\n\n";
+        for (size_t i = 0; i < std::min(jobsArr->size(), MAXIMAL_JOBS); ++i) {
+            auto job = jobsArr->getObject(i)->getObject("table");
+            ss << "main.jobs.number" << i + 1 << "\n";
+            ss << "main.jobs.state" << ": " << job->getValue<std::string>("state") << "\n";
+            ss << "main.jobs.id" << ": " << job->getValue<int>("id") << "\n";
+            ss << "main.jobs.num-cores" << ": " << job->getValue<int>("num_cores") << "\n";
+            ss << "main.jobs.num-nodes" << ": " << job->getValue<int>("num_nodes") << "\n";
+            ss << "main.jobs.duration-hours" << ": " << job->getValue<double>("get_duration_hours") << "\n";
+            if (job->has("rules")) {
+                std::stringstream rulesSs;
+                const auto rules = job->getObject("rules");
+                for (const auto& pair : *rules) {
+                    rulesSs << pair.second.extract<std::string>() << "; ";
+                }
+
+                const std::string rulesStr = rulesSs.str();
+                if (!rulesStr.empty()) {
+                    ss << "main.jobs.rules" << ": " << rulesStr;
+                }
+            }
+            ss << "\n\n";
+        }
+
+        reaction.Text = ss.str();
+    }
+
+    return reaction;
+}
+
 TReaction ConstructTicketsReaction(TOctoshell& octoshell, const TUserState& state) {
     auto& logger = Poco::Logger::get("main_menu_processor");
 
@@ -124,7 +172,7 @@ TReactions TMainMenuStatesProcessor::OnStart(TUpdate update, TUserState& state) 
     Poco::Logger::get("main_menu_processor").information("on_start from user %" PRIu64, update.UserId);
 
     const static TReaction::TKeyboard keyboardTemplate = {
-        {"main.button.show-user-projects"},
+        {"main.button.show-user-projects", "main.button.show-user-jobs"},
         {"main.button.show-tickets", "main.button.create-tickets"},
         {"main.button.to-auth-settings"},
         {"main.button.to-locale-settings"},
@@ -151,6 +199,10 @@ TReactions TMainMenuStatesProcessor::OnUpdate(TUpdate update, TUserState& state)
 
     if (code == "main.button.show-user-projects") {
         return {ConstructUserProjectsReaction(Ctx_.Octoshell(), state)};
+    }
+
+    if (code == "main.button.show-user-jobs") {
+        return {ConstructUserJobsReaction(Ctx_.Octoshell(), state)};
     }
 
     if (code == "main.button.show-tickets") {

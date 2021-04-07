@@ -101,8 +101,10 @@ public:
             for (const auto& reaction : reactions) {
                 Client_->SendReaction(update, reaction);
             }
-        } catch (Poco::JSON::JSONException& e) {
+        } catch (const Poco::JSON::JSONException& e) {
             logger.error(e.displayText());
+        } catch (const std::exception& e) {
+            logger.error(e.what());
         }
     }
 

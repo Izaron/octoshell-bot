@@ -44,6 +44,7 @@ std::string ConstructReplyMarkupJson(const TReaction::TKeyboard& keyboard) {
 std::string UrlQuote(std::string s) {
     s = std::regex_replace(s, std::regex(" "), "%20");
     s = std::regex_replace(s, std::regex("\n"), "%0A");
+    s = std::regex_replace(s, std::regex("\r"), "%0D");
     return s;
 }
 

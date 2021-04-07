@@ -19,6 +19,7 @@ namespace {
 std::string UrlQuote(std::string s) {
     s = std::regex_replace(s, std::regex(" "), "%20");
     s = std::regex_replace(s, std::regex("\n"), "%0A");
+    s = std::regex_replace(s, std::regex("\r"), "%0D");
     return s;
 }
 
@@ -62,6 +63,9 @@ std::string TOctoshell::SendQuery(const std::unordered_map<std::string, std::str
     }
 
     HTTPClientSession session(uri.getHost(), uri.getPort());
+    const Poco::Timespan ts(/* seconds = */ 5L, /* microseconds = */ 0L);
+    session.setTimeout(ts);
+
     HTTPRequest request(HTTPRequest::HTTP_GET, path, HTTPMessage::HTTP_1_1);
     session.sendRequest(request);
 
