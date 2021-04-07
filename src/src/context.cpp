@@ -2,9 +2,10 @@
 
 #include "handlers.h"
 
-#include <map>
-#include <sstream>
 #include <inttypes.h>
+#include <map>
+#include <queue>
+#include <sstream>
 
 #include <mongocxx/client.hpp>
 #include <mongocxx/instance.hpp>
@@ -15,9 +16,11 @@
 #include <Poco/PatternFormatter.h>
 #include <Poco/FormattingChannel.h>
 
-#include <Poco/URI.h>
-#include <Poco/Net/HTTPSClientSession.h>
+#include <Poco/Environment.h>
+
 #include <Poco/Net/HTTPResponse.h>
+#include <Poco/Net/HTTPSClientSession.h>
+#include <Poco/URI.h>
 
 using namespace Poco;
 using namespace Poco::Net;
@@ -29,6 +32,41 @@ namespace {
 std::unique_ptr<Net::HTTPServer> ConstructHttpServer(TContext& ctx) {
     std::uint16_t port = ctx.Config().getInt("port");
     return std::make_unique<Net::HTTPServer>(new THandlerFactory(ctx), port);
+}
+
+Poco::AutoPtr<Poco::Util::PropertyFileConfiguration> ConstructConfig(const std::string& configPath) {
+    Poco::AutoPtr<Poco::Util::PropertyFileConfiguration> config = new Util::PropertyFileConfiguration(configPath);
+
+    std::vector<std::string> keys;
+    std::queue<std::string> q;
+    q.push("");
+    while (!q.empty()) {
+        std::string prefix = q.front();
+        q.pop();
+
+        std::vector<std::string> child;
+        config->keys(prefix, child);
+
+        if (child.empty()) {
+            keys.push_back(std::move(prefix));
+        } else {
+            for (auto&& v : child) {
+                if (!prefix.empty()) {
+                    q.push(prefix + "." + std::move(v));
+                } else {
+                    q.push(std::move(v));
+                }
+            }
+        }
+    }
+
+    for (const auto& key : keys) {
+        std::string envVar = "OCTOBOT_" + translate(toUpper(key), ".", "_");
+        if (Poco::Environment::has(envVar)) {
+            config->setString(key, Poco::Environment::get(envVar));
+        }
+    }
+    return config;
 }
 
 void InitLogs(const Util::PropertyFileConfiguration& config) {
@@ -83,7 +121,7 @@ void SetTelegramWebhook(const Util::PropertyFileConfiguration& config) {
 
 
 TContext::TContext(const std::string& configPath)
-    : Config_{new Util::PropertyFileConfiguration(configPath)}
+    : Config_{ConstructConfig(configPath)}
     , HttpServer_{ConstructHttpServer(*this)}
     , StatesHolder_{*this}
     , Mongo_{*this}
