@@ -9,6 +9,7 @@
 #include <Poco/Net/HTTPClientSession.h>
 #include <Poco/Net/HTTPRequest.h>
 #include <Poco/Net/HTTPResponse.h>
+#include <Poco/Net/HTTPSClientSession.h>
 
 using namespace Poco::Net;
 
@@ -62,15 +63,21 @@ std::string TOctoshell::SendQuery(const std::unordered_map<std::string, std::str
         path = "/";
     }
 
-    HTTPClientSession session(uri.getHost(), uri.getPort());
+    std::unique_ptr<HTTPClientSession> session;
+    if (uri.getScheme() == "http") {
+        session = std::make_unique<HTTPClientSession>(uri.getHost(), uri.getPort());
+    } else {
+        session = std::make_unique<HTTPSClientSession>(uri.getHost(), uri.getPort());
+    }
+
     const Poco::Timespan ts(/* seconds = */ 5L, /* microseconds = */ 0L);
-    session.setTimeout(ts);
+    session->setTimeout(ts);
 
     HTTPRequest request(HTTPRequest::HTTP_GET, path, HTTPMessage::HTTP_1_1);
-    session.sendRequest(request);
+    session->sendRequest(request);
 
     HTTPResponse response;
-    std::istream& rs = session.receiveResponse(response);
+    std::istream& rs = session->receiveResponse(response);
 
     std::stringstream responseStream;
     responseStream << rs.rdbuf();
