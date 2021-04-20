@@ -43,12 +43,12 @@ std::string ReadInput(HTTPServerRequest& request) {
 void ConfirmVkontakte(const Poco::JSON::Object& data, const TContext& ctx, HTTPServerRequest& request, HTTPServerResponse& response) {
     auto& logger = Poco::Logger::get("vkontakte_confirm");
 
-    if (!data.has("secret") || data.getValue<std::string>("secret") != ctx.Config().getString("vk.secret-code")) {
+    if (!data.has("secret") || data.getValue<std::string>("secret") != ctx.Config().getString("vk.secret_code")) {
         logger.warning("wrong or absent \"secret\" in VK confirm request");
         return;
     }
 
-    if (!data.has("group_id") || data.getValue<std::string>("group_id") != ctx.Config().getString("vk.group-id")) {
+    if (!data.has("group_id") || data.getValue<std::string>("group_id") != ctx.Config().getString("vk.group_id")) {
         logger.warning("wrong or absent \"group_id\" in VK confirm request");
         return;
     }
@@ -56,7 +56,7 @@ void ConfirmVkontakte(const Poco::JSON::Object& data, const TContext& ctx, HTTPS
 
     response.setStatus(HTTPServerResponse::HTTP_OK);
     response.setContentType("text/plain");
-    response.send() << ctx.Config().getString("vk.confirmation-code");
+    response.send() << ctx.Config().getString("vk.confirmation_code");
 }
 
 template<typename TClient, std::enable_if_t<std::is_base_of<IClient, TClient>::value, int> = 0>

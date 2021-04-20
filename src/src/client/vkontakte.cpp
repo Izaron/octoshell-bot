@@ -79,7 +79,7 @@ void TVkontakteClient::SendReaction(const TUpdate& update, const TReaction& reac
     ss << "https://api.vk.com/method/messages.send";
     ss << "?message=" << UrlQuote(reaction.Text);
     ss << "&peer_id=" << update.UserId;
-    ss << "&access_token=" << Ctx_.Config().getString("vk.access-token");
+    ss << "&access_token=" << Ctx_.Config().getString("vk.access_token");
     ss << "&v=" << "5.124";
     ss << "&random_id=" << "0";
     ss << "&keyboard=" << UrlQuote(ConstructReplyMarkupJson(reaction.Keyboard));
