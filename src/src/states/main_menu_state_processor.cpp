@@ -132,9 +132,9 @@ TReaction ConstructTicketsReaction(TOctoshell& octoshell, const TUserState& stat
     } else {
         auto ticketsArr = object->getArray("tickets");
 
-        std::stringstream ss;
         int ticketsCount = 0;
-
+        std::stringstream ss;
+        ss << "main.tickets.header" << " " << ticketsArr->size() << "\n";
         for (size_t i = 0; i < std::min(ticketsArr->size(), MAXIMAL_TICKETS); ++i) {
             try {
                 auto ticket = ticketsArr->getObject(i);
@@ -164,9 +164,7 @@ TReaction ConstructTicketsReaction(TOctoshell& octoshell, const TUserState& stat
             }
         }
 
-        std::stringstream finalSs;
-        finalSs << "main.tickets.header" << " " << ticketsCount << "\n" << ss.str();
-        reaction.Text = finalSs.str();
+        reaction.Text = ss.str();
     }
 
     return reaction;
