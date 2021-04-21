@@ -27,6 +27,8 @@ TReaction ConstructInformationReaction() {
 }
 
 TReaction ConstructUserProjectsReaction(TOctoshell& octoshell, const TUserState& state) {
+    constexpr size_t MAXIMAL_PROJECTS = 10;
+
     TReaction reaction;
 
     const std::string response = octoshell.SendQueryWithAuth(state, {{"method", "user_projects"}});
@@ -43,7 +45,7 @@ TReaction ConstructUserProjectsReaction(TOctoshell& octoshell, const TUserState&
 
         std::stringstream ss;
         ss << "main.projects.header " << projArr->size() << "\n";
-        for (size_t i = 0; i < projArr->size(); ++i) {
+        for (size_t i = 0; i < std::min(projArr->size(), MAXIMAL_PROJECTS); ++i) {
             auto proj = projArr->getObject(i);
             ss << "\n";
             ss << "main.projects.number" << i + 1 << "\n";
@@ -82,13 +84,15 @@ TReaction ConstructUserJobsReaction(TOctoshell& octoshell, const TUserState& sta
         std::stringstream ss;
         ss << "main.jobs.header: " << jobsArr->size() << "\n\n";
         for (size_t i = 0; i < std::min(jobsArr->size(), MAXIMAL_JOBS); ++i) {
-            auto job = jobsArr->getObject(i)->getObject("table");
+            auto job = jobsArr->getObject(i);
             ss << "main.jobs.number" << i + 1 << "\n";
             ss << "main.jobs.state" << ": " << job->getValue<std::string>("state") << "\n";
             ss << "main.jobs.id" << ": " << job->getValue<int>("id") << "\n";
             ss << "main.jobs.num-cores" << ": " << job->getValue<int>("num_cores") << "\n";
             ss << "main.jobs.num-nodes" << ": " << job->getValue<int>("num_nodes") << "\n";
-            ss << "main.jobs.duration-hours" << ": " << job->getValue<double>("get_duration_hours") << "\n";
+            if (job->has("get_duration_hours")) {
+                ss << "main.jobs.duration-hours" << ": " << job->getValue<double>("get_duration_hours") << "\n";
+            }
             if (job->has("rules")) {
                 std::stringstream rulesSs;
                 const auto rules = job->getObject("rules");
@@ -111,6 +115,8 @@ TReaction ConstructUserJobsReaction(TOctoshell& octoshell, const TUserState& sta
 }
 
 TReaction ConstructTicketsReaction(TOctoshell& octoshell, const TUserState& state) {
+    constexpr size_t MAXIMAL_TICKETS = 10;
+
     auto& logger = Poco::Logger::get("main_menu_processor");
 
     TReaction reaction;
@@ -129,7 +135,7 @@ TReaction ConstructTicketsReaction(TOctoshell& octoshell, const TUserState& stat
         std::stringstream ss;
         int ticketsCount = 0;
 
-        for (size_t i = 0; i < ticketsArr->size(); ++i) {
+        for (size_t i = 0; i < std::min(ticketsArr->size(), MAXIMAL_TICKETS); ++i) {
             try {
                 auto ticket = ticketsArr->getObject(i);
 
