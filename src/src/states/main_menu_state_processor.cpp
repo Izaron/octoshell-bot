@@ -27,8 +27,6 @@ TReaction ConstructInformationReaction() {
 }
 
 TReaction ConstructUserProjectsReaction(TOctoshell& octoshell, const TUserState& state) {
-    constexpr size_t MAXIMAL_PROJECTS = 10;
-
     TReaction reaction;
 
     const std::string response = octoshell.SendQueryWithAuth(state, {{"method", "user_projects"}});
@@ -43,18 +41,47 @@ TReaction ConstructUserProjectsReaction(TOctoshell& octoshell, const TUserState&
     } else {
         auto projArr = object->getArray("projects");
 
+        std::vector<Poco::JSON::Object::Ptr> projVector(projArr->size());
+        for (size_t i = 0; i < projArr->size(); ++i) {
+            projVector[i] = projArr->getObject(i);
+        }
+        std::sort(projVector.begin(), projVector.end(), [](const Poco::JSON::Object::Ptr& a, const Poco::JSON::Object::Ptr& b) -> bool {
+            if (a->has("updated_at") && b->has("updated_at")) {
+                return a->getValue<std::string>("updated_at") > b->getValue<std::string>("updated_at");
+            } else if (a->has("updated_at")) {
+                return true;
+            } else if (b->has("updated_at")) {
+                return false;
+            } else {
+                return a->getValue<std::string>("title") > b->getValue<std::string>("title");
+            }
+        });
+
         std::stringstream ss;
         ss << "main.projects.header " << projArr->size() << "\n";
-        for (size_t i = 0; i < std::min(projArr->size(), MAXIMAL_PROJECTS); ++i) {
-            auto proj = projArr->getObject(i);
+        for (size_t i = 0; i < projVector.size(); ++i) {
+            auto proj = projVector[i];
+            if (proj->has("state")) {
+                std::string state = proj->getValue<std::string>("state");
+                if (state == "blocked" || state == "finished") {
+                    continue;
+                }
+            }
             ss << "\n";
             ss << "main.projects.number" << i + 1 << "\n";
             ss << "main.projects.login " << "\"" << proj->getValue<std::string>("login") << "\"\n";
             ss << "main.projects.title " << "\"" << proj->getValue<std::string>("title") << "\"\n";
+            if (proj->has("state")) {
+                std::string state = proj->getValue<std::string>("state");
+                ss << "main.projects.state: *" << state << "*\n";
+            }
             if (proj->getValue<bool>("owner")) {
                 ss << "main.projects.is-owner" << "\n";
             } else {
                 ss << "main.projects.is-not-owner" << "\n";
+            }
+            if (proj->has("updated_at")) {
+                ss << "main.projects.updated-at" << ": `" << proj->getValue<std::string>("updated_at") << "`\n";
             }
         }
 
