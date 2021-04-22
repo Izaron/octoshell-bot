@@ -152,13 +152,16 @@ TReaction ConstructUserJobsReaction(TOctoshell& octoshell, const Poco::Util::Pro
     return reaction;
 }
 
-TReaction ConstructTicketsReaction(TOctoshell& octoshell, const TUserState& state) {
-    constexpr size_t MAXIMAL_TICKETS = 10;
+TReaction ConstructTicketsReaction(TOctoshell& octoshell, const Poco::Util::PropertyFileConfiguration& config, const TUserState& state) {
+    const size_t maxTickets = config.getInt("octoshell.max_user_tickets");
 
     auto& logger = Poco::Logger::get("main_menu_processor");
 
     TReaction reaction;
-    const std::string response = octoshell.SendQueryWithAuth(state, {{"method", "user_tickets"}});
+    const std::string response = octoshell.SendQueryWithAuth(state, {
+        {"method", "user_tickets"},
+        {"limit", std::to_string(maxTickets)},
+    });
 
     Poco::JSON::Parser parser;
     auto result = parser.parse(response);
@@ -172,8 +175,12 @@ TReaction ConstructTicketsReaction(TOctoshell& octoshell, const TUserState& stat
 
         int ticketsCount = 0;
         std::stringstream ss;
-        ss << "main.tickets.header" << " " << ticketsArr->size() << "\n";
-        for (size_t i = 0; i < std::min(ticketsArr->size(), MAXIMAL_TICKETS); ++i) {
+        if (object->has("tickets_count")) {
+            ss << "main.tickets.header" << " " << object->getValue<int>("tickets_count") << "\n";
+        } else {
+            ss << "main.tickets.header" << " " << ticketsArr->size() << "\n";
+        }
+        for (size_t i = 0; i < std::min(ticketsArr->size(), 2 * maxTickets); ++i) {
             try {
                 auto ticket = ticketsArr->getObject(i);
 
@@ -195,6 +202,9 @@ TReaction ConstructTicketsReaction(TOctoshell& octoshell, const TUserState& stat
                 ss << "main.tickets.subject-title" << ": " << subject << "\n";
                 ss << "main.tickets.state-title" << ": " << "main.tickets.state." << state << "\n";
                 ss << "main.tickets.desc" << ": " << message << "\n";
+                if (ticket->has("updated_at")) {
+                    ss << "main.tickets.updated-at" << ": `" << ticket->getValue<std::string>("updated_at") << "`\n";
+                }
 
                 ++ticketsCount;
             } catch (...) {
@@ -248,7 +258,7 @@ TReactions TMainMenuStatesProcessor::OnUpdate(TUpdate update, TUserState& state)
     }
 
     if (code == "main.button.show-tickets") {
-        return {ConstructTicketsReaction(Ctx_.Octoshell(), state)};
+        return {ConstructTicketsReaction(Ctx_.Octoshell(), Ctx_.Config(), state)};
     }
 
     if (code == "main.button.create-tickets") {
