@@ -101,23 +101,23 @@ TReaction ConstructUserJobsReaction(TOctoshell& octoshell, const Poco::Util::Pro
         for (size_t i = 0; i < std::min(jobsVector.size(), maxJobs); ++i) {
             auto& job = jobsVector[i];
             if (job->has("id")) {
-                ss << "main.jobs.number" << " <b>" << job->getValue<int>("id") << "</b>";
+                ss << "main.jobs.number" << " *" << job->getValue<int>("id") << "*";
                 if (job->has("state")) {
-                    ss << " (" << "main.jobs.state" << " <b>" << job->getValue<std::string>("state") << "</b>)";
+                    ss << " (" << "main.jobs.state" << " *" << job->getValue<std::string>("state") << "*)";
                 }
                 ss << "\n";
             }
             if (job->has("submit_time")) {
-                ss << "main.jobs.submitted" << ": <code>" << job->getValue<std::string>("submit_time") << "</code>\n";
+                ss << "main.jobs.submitted" << ": `" << job->getValue<std::string>("submit_time") << "`\n";
             }
             if (job->has("state")) {
                 const std::string state = job->getValue<std::string>("state");
                 if (state != "PENDING") {
                     if (job->has("start_time")) {
-                        ss << "main.jobs.started" << ": <code>" << job->getValue<std::string>("start_time") << "</code>\n";
+                        ss << "main.jobs.started" << ": `" << job->getValue<std::string>("start_time") << "`\n";
                     }
                     if (job->has("end_time")) {
-                        ss << "main.jobs.ended" << ": <code>" << job->getValue<std::string>("end_time") << "</code>\n";
+                        ss << "main.jobs.ended" << ": `" << job->getValue<std::string>("end_time") << "`\n";
                     }
                 }
             }
@@ -141,7 +141,7 @@ TReaction ConstructUserJobsReaction(TOctoshell& octoshell, const Poco::Util::Pro
                 }
             }
             if (job->has("command")) {
-                ss << "\n" << "main.jobs.command" << ": <code>" << job->getValue<std::string>("command") << "</code>\n";
+                ss << "\n" << "main.jobs.command" << ": `" << job->getValue<std::string>("command") << "`\n";
             }
             ss << "\n\n";
         }

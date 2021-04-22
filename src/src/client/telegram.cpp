@@ -41,11 +41,28 @@ std::string ConstructReplyMarkupJson(const TReaction::TKeyboard& keyboard) {
     return ss.str();
 }
 
-std::string UrlQuote(std::string s) {
+std::string UrlQuote(std::string s, bool escapeUnderscore = false) {
     s = std::regex_replace(s, std::regex(" "), "%20");
     s = std::regex_replace(s, std::regex("\n"), "%0A");
     s = std::regex_replace(s, std::regex("\r"), "%0D");
-    return s;
+
+    std::string res;
+    if (escapeUnderscore) {
+        bool inCode = false;
+        for (const auto c : s) {
+            if (c == '`') {
+                inCode = !inCode;
+            }
+            if (c == '_' && !inCode) {
+                res += "\\";
+            }
+            res += c;
+        }
+    } else {
+        res = s;
+    }
+
+    return res;
 }
 
 } // namespace
@@ -74,14 +91,14 @@ void TTelegramClient::SendReaction(const TUpdate& update, const TReaction& react
     std::stringstream ss;
     ss << "https://api.telegram.org/bot" << Ctx_.Config().getString("telegram.token") << "/sendMessage";
     ss << "?chat_id=" << std::to_string(update.UserId);
-    ss << "&text=" << reaction.Text;
+    ss << "&text=" << UrlQuote(reaction.Text, /* escapeUnderscore = */ true);
     if (!reaction.Keyboard.empty()) {
-        ss << "&reply_markup=" << UrlQuote(ConstructReplyMarkupJson(reaction.Keyboard));
+        ss << "&reply_markup=" << UrlQuote(ConstructReplyMarkupJson(reaction.Keyboard), /* escapeUnderscore = */ true);
     }
     if (reaction.ForceReply) {
         ss << "&reply_markup=" << R"({"force_reply":true})";
     }
-    ss << "&parse_mode=html";
+    ss << "&parse_mode=markdown";
 
     Poco::URI uri{UrlQuote(ss.str())};
 
