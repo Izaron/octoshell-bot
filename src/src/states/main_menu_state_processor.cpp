@@ -64,12 +64,15 @@ TReaction ConstructUserProjectsReaction(TOctoshell& octoshell, const TUserState&
     return reaction;
 }
 
-TReaction ConstructUserJobsReaction(TOctoshell& octoshell, const TUserState& state) {
-    constexpr size_t MAXIMAL_JOBS = 5;
+TReaction ConstructUserJobsReaction(TOctoshell& octoshell, const Poco::Util::PropertyFileConfiguration& config, const TUserState& state) {
+    const size_t maxJobs = config.getInt("octoshell.max_user_jobs");
 
     TReaction reaction;
 
-    const std::string response = octoshell.SendQueryWithAuth(state, {{"method", "user_jobs"}});
+    const std::string response = octoshell.SendQueryWithAuth(state, {
+        {"method", "user_jobs"},
+        {"limit", std::to_string(maxJobs)},
+    });
 
     Poco::JSON::Parser parser;
     auto result = parser.parse(response);
@@ -81,17 +84,49 @@ TReaction ConstructUserJobsReaction(TOctoshell& octoshell, const TUserState& sta
     } else {
         auto jobsArr = object->getArray("jobs");
 
+        std::vector<Poco::JSON::Object::Ptr> jobsVector(jobsArr->size());
+        for (size_t i = 0; i < jobsArr->size(); ++i) {
+            jobsVector[i] = jobsArr->getObject(i);
+        }
+        std::sort(jobsVector.begin(), jobsVector.end(), [](const Poco::JSON::Object::Ptr& a, const Poco::JSON::Object::Ptr& b) -> bool {
+            return a->getValue<int>("id") > b->getValue<int>("id");
+        });
+
         std::stringstream ss;
-        ss << "main.jobs.header: " << jobsArr->size() << "\n\n";
-        for (size_t i = 0; i < std::min(jobsArr->size(), MAXIMAL_JOBS); ++i) {
-            auto job = jobsArr->getObject(i);
-            ss << "main.jobs.number" << i + 1 << "\n";
-            ss << "main.jobs.state" << ": " << job->getValue<std::string>("state") << "\n";
-            ss << "main.jobs.id" << ": " << job->getValue<int>("id") << "\n";
-            ss << "main.jobs.num-cores" << ": " << job->getValue<int>("num_cores") << "\n";
-            ss << "main.jobs.num-nodes" << ": " << job->getValue<int>("num_nodes") << "\n";
+        if (object->has("jobs_count")) {
+            ss << "main.jobs.header: " << object->getValue<int>("jobs_count") << "\n\n";
+        } else {
+            ss << "main.jobs.header: " << jobsArr->size() << "\n\n";
+        }
+        for (size_t i = 0; i < std::min(jobsVector.size(), maxJobs); ++i) {
+            auto& job = jobsVector[i];
+            if (job->has("id")) {
+                ss << "main.jobs.number" << " <b>" << job->getValue<int>("id") << "</b>";
+                if (job->has("state")) {
+                    ss << " (" << "main.jobs.state" << " <b>" << job->getValue<std::string>("state") << "</b>)";
+                }
+                ss << "\n";
+            }
+            if (job->has("submit_time")) {
+                ss << "main.jobs.submitted" << ": <code>" << job->getValue<std::string>("submit_time") << "</code>\n";
+            }
+            if (job->has("state")) {
+                const std::string state = job->getValue<std::string>("state");
+                if (state != "PENDING") {
+                    if (job->has("start_time")) {
+                        ss << "main.jobs.started" << ": <code>" << job->getValue<std::string>("start_time") << "</code>\n";
+                    }
+                    if (job->has("end_time")) {
+                        ss << "main.jobs.ended" << ": <code>" << job->getValue<std::string>("end_time") << "</code>\n";
+                    }
+                }
+            }
             if (job->has("get_duration_hours")) {
                 ss << "main.jobs.duration-hours" << ": " << job->getValue<double>("get_duration_hours") << "\n";
+            }
+            if (job->has("num_cores") && job->has("num_nodes")) {
+                ss << "main.jobs.num-nodes" << ": " << job->getValue<int>("num_nodes") << ", ";
+                ss << "main.jobs.num-cores" << ": " << job->getValue<int>("num_cores") << "\n";
             }
             if (job->has("rules")) {
                 std::stringstream rulesSs;
@@ -104,6 +139,9 @@ TReaction ConstructUserJobsReaction(TOctoshell& octoshell, const TUserState& sta
                 if (!rulesStr.empty()) {
                     ss << "main.jobs.rules" << ": " << rulesStr;
                 }
+            }
+            if (job->has("command")) {
+                ss << "\n" << "main.jobs.command" << ": <code>" << job->getValue<std::string>("command") << "</code>\n";
             }
             ss << "\n\n";
         }
@@ -206,7 +244,7 @@ TReactions TMainMenuStatesProcessor::OnUpdate(TUpdate update, TUserState& state)
     }
 
     if (code == "main.button.show-user-jobs") {
-        return {ConstructUserJobsReaction(Ctx_.Octoshell(), state)};
+        return {ConstructUserJobsReaction(Ctx_.Octoshell(), Ctx_.Config(), state)};
     }
 
     if (code == "main.button.show-tickets") {

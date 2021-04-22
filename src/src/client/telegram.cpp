@@ -81,6 +81,7 @@ void TTelegramClient::SendReaction(const TUpdate& update, const TReaction& react
     if (reaction.ForceReply) {
         ss << "&reply_markup=" << R"({"force_reply":true})";
     }
+    ss << "&parse_mode=html";
 
     Poco::URI uri{UrlQuote(ss.str())};
 
