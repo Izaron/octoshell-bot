@@ -1,7 +1,7 @@
 #include "vkontakte.h"
+#include "util.h"
 #include "../context.h"
 
-#include <regex>
 #include <sstream>
 
 #include <Poco/Logger.h>
@@ -47,13 +47,6 @@ std::string ConstructReplyMarkupJson(const TReaction::TKeyboard& keyboard) {
     return ss.str();
 }
 
-std::string UrlQuote(std::string s) {
-    s = std::regex_replace(s, std::regex(" "), "%20");
-    s = std::regex_replace(s, std::regex("\n"), "%0A");
-    s = std::regex_replace(s, std::regex("\r"), "%0D");
-    return s;
-}
-
 } // namespace
 
 TUpdate TVkontakteClient::ParseUpdate(const Poco::JSON::Object& data) const {
@@ -75,33 +68,37 @@ void TVkontakteClient::SendReaction(const TUpdate& update, const TReaction& reac
     auto& logger = Poco::Logger::get("vkontakte");
     logger.information("send vkontakte reaction");
 
-    std::stringstream ss;
-    ss << "https://api.vk.com/method/messages.send";
-    ss << "?message=" << UrlQuote(reaction.Text);
-    ss << "&peer_id=" << update.UserId;
-    ss << "&access_token=" << Ctx_.Config().getString("vk.access_token");
-    ss << "&v=" << "5.124";
-    ss << "&random_id=" << "0";
-    ss << "&keyboard=" << UrlQuote(ConstructReplyMarkupJson(reaction.Keyboard));
+    auto msgs = DivideMessage(reaction.Text, Ctx_.Config().getInt("vk.msg_size"));
 
-    Poco::URI uri{UrlQuote(ss.str())};
+    for (const std::string& msg : msgs) {
+        std::stringstream ss;
+        ss << "https://api.vk.com/method/messages.send";
+        ss << "?message=" << UrlQuote(msg);
+        ss << "&peer_id=" << update.UserId;
+        ss << "&access_token=" << Ctx_.Config().getString("vk.access_token");
+        ss << "&v=" << "5.124";
+        ss << "&random_id=" << "0";
+        ss << "&keyboard=" << UrlQuote(ConstructReplyMarkupJson(reaction.Keyboard));
 
-    std::string path(uri.getPathAndQuery());
-    if (path.empty()) {
-        path = "/";
+        Poco::URI uri{UrlQuote(ss.str())};
+
+        std::string path(uri.getPathAndQuery());
+        if (path.empty()) {
+            path = "/";
+        }
+
+        HTTPSClientSession session(uri.getHost(), uri.getPort());
+        HTTPRequest request(HTTPRequest::HTTP_POST, path, HTTPMessage::HTTP_1_1);
+        request.setContentLength(0);
+        session.sendRequest(request);
+
+        HTTPResponse response;
+        std::istream& rs = session.receiveResponse(response);
+
+        std::stringstream responseStream;
+        responseStream << rs.rdbuf();
+        logger.information("sendMessage response: code %d, reason %s, body %s", static_cast<int>(response.getStatus()), response.getReason(), responseStream.str());
     }
-
-    HTTPSClientSession session(uri.getHost(), uri.getPort());
-    HTTPRequest request(HTTPRequest::HTTP_POST, path, HTTPMessage::HTTP_1_1);
-    request.setContentLength(0);
-    session.sendRequest(request);
-
-    HTTPResponse response;
-    std::istream& rs = session.receiveResponse(response);
-
-    std::stringstream responseStream;
-    responseStream << rs.rdbuf();
-    logger.information("sendMessage response: code %d, reason %s, body %s", static_cast<int>(response.getStatus()), response.getReason(), responseStream.str());
 }
 
 TUserState_ESource TVkontakteClient::Source() const {

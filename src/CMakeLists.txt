@@ -15,6 +15,7 @@ ADD_EXECUTABLE(octoshellbot
 
     src/client/telegram.cpp
     src/client/vkontakte.cpp
+    src/client/util.cpp
 
     src/auth_status.cpp
     src/context.cpp
